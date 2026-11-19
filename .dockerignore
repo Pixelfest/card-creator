@@ -1,0 +1,10 @@
+**/bin/
+**/obj/
+**/node_modules/
+**/dist/
+src/server/CardCreator.Server/wwwroot/
+.git/
+.github/
+.claude/
+deploy/
+docs/

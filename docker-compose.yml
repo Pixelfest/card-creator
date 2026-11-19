@@ -1,0 +1,54 @@
+# Production, on the Windows host behind the owner's nginx (cards.heavyroad.nl -> 127.0.0.1:8100).
+# Deploy with deploy/release.ps1; see deploy/README.md. Local development uses
+# docker-compose.dev.yml instead.
+name: cardcreator
+
+services:
+  app:
+    build: .
+    restart: unless-stopped
+    env_file:
+      - path: deploy/production.env
+        required: true
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+    ports:
+      - "127.0.0.1:8100:8080"
+    volumes:
+      - artwork:/data/artwork
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    # Reads POSTGRES_DB / POSTGRES_USER / POSTGRES_PASSWORD. No host port: only the app and
+    # the backup script (via `docker compose exec`) reach it.
+    env_file:
+      - path: deploy/production.env
+        required: true
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+
+networks:
+  # A fixed subnet so the app trusts X-Forwarded-For only from this network, whose gateway is
+  # where nginx's proxied requests arrive from. Must match ForwardedHeaders:TrustedNetworks
+  # in src/server/CardCreator.Server/appsettings.Production.json.
+  default:
+    ipam:
+      config:
+        - subnet: 172.30.42.0/24
+          gateway: 172.30.42.1
+
+volumes:
+  # Explicit names so backup.ps1 and the restore steps can address them directly.
+  pgdata:
+    name: cardcreator_pgdata_prod
+  artwork:
+    name: cardcreator_artwork_prod
