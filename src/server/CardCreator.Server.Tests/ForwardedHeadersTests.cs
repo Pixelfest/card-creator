@@ -2,7 +2,8 @@ using System.Net;
 
 namespace CardCreator.Server.Tests;
 
-public class ForwardedHeadersTests(AppFactory factory) : IClassFixture<AppFactory>
+[Collection(AppCollection.Name)]
+public class ForwardedHeadersTests(AppFactory factory)
 {
     private async Task<IPAddress?> ResolveClientAddress(IPAddress peer, string forwardedFor)
     {

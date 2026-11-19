@@ -2,7 +2,8 @@ using System.Net;
 
 namespace CardCreator.Server.Tests;
 
-public class HealthTests(AppFactory factory) : IClassFixture<AppFactory>
+[Collection(AppCollection.Name)]
+public class HealthTests(AppFactory factory)
 {
     [Fact]
     public async Task Health_returns_200_when_the_database_is_reachable()
