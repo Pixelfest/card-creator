@@ -49,6 +49,58 @@ namespace CardCreator.Server.Data.Migrations
 
                     b.ToTable("collections");
                 });
+
+            modelBuilder.Entity("CardCreator.Server.Sets.Set", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasMaxLength(22)
+                        .HasColumnType("character varying(22)")
+                        .HasColumnName("id");
+
+                    b.Property<string>("CardFormat")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("card_format");
+
+                    b.Property<string>("CollectionId")
+                        .IsRequired()
+                        .HasMaxLength(22)
+                        .HasColumnType("character varying(22)")
+                        .HasColumnName("collection_id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("name");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("Id")
+                        .HasName("pk_sets");
+
+                    b.HasIndex("CollectionId")
+                        .HasDatabaseName("ix_sets_collection_id");
+
+                    b.ToTable("sets");
+                });
+
+            modelBuilder.Entity("CardCreator.Server.Sets.Set", b =>
+                {
+                    b.HasOne("CardCreator.Server.Collections.Collection", null)
+                        .WithMany()
+                        .HasForeignKey("CollectionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_sets_collections_collection_id");
+                });
 #pragma warning restore 612, 618
         }
     }

@@ -1,3 +1,5 @@
+import { calendarDaysBetween } from '../dates'
+
 // "Recently opened" Collections live only in this browser's localStorage (docs/spec.md,
 // section 3). The server never lists Collections.
 
@@ -45,8 +47,7 @@ export function parseRecent(raw: string | null): RecentCollection[] {
 
 /** "opened today", "opened yesterday" or "opened N days ago", by local calendar day. */
 export function openedLabel(openedAt: string, now: Date): string {
-  const startOfDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime()
-  const days = Math.round((startOfDay(now) - startOfDay(new Date(openedAt))) / 86_400_000)
+  const days = calendarDaysBetween(new Date(openedAt), now)
   if (days <= 0) return 'opened today'
   if (days === 1) return 'opened yesterday'
   return `opened ${days} days ago`

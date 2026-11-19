@@ -1,6 +1,7 @@
 import { CollectionPage } from './collections/CollectionPage'
 import { HomePage } from './home/HomePage'
 import { NotFoundPage } from './NotFoundPage'
+import { SetEditorPage } from './sets/SetEditorPage'
 import { useRoute } from './router'
 
 export function App() {
@@ -10,6 +11,14 @@ export function App() {
       return <HomePage />
     case 'collection':
       return <CollectionPage key={route.collectionId} collectionId={route.collectionId} />
+    case 'set':
+      return (
+        <SetEditorPage
+          key={`${route.collectionId}/${route.setId}`}
+          collectionId={route.collectionId}
+          setId={route.setId}
+        />
+      )
     case 'notFound':
       return <NotFoundPage />
   }
