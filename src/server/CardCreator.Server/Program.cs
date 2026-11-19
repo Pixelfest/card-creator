@@ -1,4 +1,5 @@
 using CardCreator.Server;
+using CardCreator.Server.Collections;
 using CardCreator.Server.Data;
 using Microsoft.EntityFrameworkCore;
 
@@ -9,6 +10,7 @@ builder.Services.AddTrustedForwardedHeaders(builder.Configuration);
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("Default"))
 );
+builder.Services.AddSingleton<CollectionCreationPolicy>();
 
 var app = builder.Build();
 
@@ -29,8 +31,9 @@ app.MapGet(
             : Results.Problem("Database unreachable", statusCode: 503)
 );
 
-// The REST API lives under /api (added by later slices). Unknown API paths are a real 404,
-// never the SPA's index.html.
+app.MapCollectionEndpoints();
+
+// Unknown API paths are a real 404, never the SPA's index.html.
 app.MapGroup("/api").MapFallback(() => Results.NotFound());
 
 // The React app is built into wwwroot (see Dockerfile); client-side routes fall back to it.
