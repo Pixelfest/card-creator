@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="CardCreator.Server.Tests/CardCreator.Server.Tests.csproj" />
+  <Project Path="CardCreator.Server/CardCreator.Server.csproj" />
+</Solution>
