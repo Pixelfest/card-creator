@@ -1,6 +1,7 @@
 using CardCreator.Server;
 using CardCreator.Server.Collections;
 using CardCreator.Server.Data;
+using CardCreator.Server.Sets;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -32,6 +33,7 @@ app.MapGet(
 );
 
 app.MapCollectionEndpoints();
+app.MapSetEndpoints();
 
 // Unknown API paths are a real 404, never the SPA's index.html.
 app.MapGroup("/api").MapFallback(() => Results.NotFound());

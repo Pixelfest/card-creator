@@ -6,7 +6,7 @@ namespace CardCreator.Server.Collections;
 public class Collection
 {
     public const string DefaultName = "Untitled collection";
-    public const int MaxNameLength = 200;
+    public const int MaxNameLength = Names.MaxLength;
 
     public required string Id { get; init; }
     public required string Name { get; set; }

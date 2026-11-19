@@ -17,8 +17,10 @@ export function stubApi(routes: Record<string, Reply | ((init?: RequestInit) => 
     const route = routes[key]
     if (!route) throw new Error(`Unexpected request: ${key}`)
     const reply = typeof route === 'function' ? route(init) : route
+    const status = reply.status ?? 200
+    if (status === 204) return new Response(null, { status })
     return new Response(JSON.stringify(reply.body ?? {}), {
-      status: reply.status ?? 200,
+      status,
       headers: { 'Content-Type': 'application/json' },
     })
   })

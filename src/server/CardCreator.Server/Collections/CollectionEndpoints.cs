@@ -86,15 +86,10 @@ public static class CollectionEndpoints
         CancellationToken ct
     )
     {
-        var name = request.Name?.Trim();
-        if (string.IsNullOrEmpty(name) || name.Length > Collection.MaxNameLength)
+        var name = Names.Normalize(request.Name);
+        if (name is null)
         {
-            return Results.ValidationProblem(
-                new Dictionary<string, string[]>
-                {
-                    ["name"] = [$"The name must be 1 to {Collection.MaxNameLength} characters."],
-                }
-            );
+            return Names.Invalid();
         }
 
         var collection = await FindAsync(db, collectionId, ct);
@@ -108,12 +103,11 @@ public static class CollectionEndpoints
         return Results.Ok(CollectionDto.From(collection));
     }
 
-    private static async Task<Collection?> FindAsync(
+    internal static async Task<Collection?> FindAsync(
         AppDbContext db,
         string collectionId,
         CancellationToken ct
     ) => Base62Id.IsValid(collectionId) ? await db.Collections.FindAsync([collectionId], ct) : null;
 
-    private static IResult NotFound() =>
-        Results.Problem(statusCode: StatusCodes.Status404NotFound, title: "Collection not found.");
+    private static IResult NotFound() => Problems.NotFound("Collection");
 }

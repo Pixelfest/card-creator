@@ -1,16 +1,20 @@
-import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
+import { useEffect, useState } from 'react'
 import { isNotFound } from '../api/http'
 import { copyText } from '../clipboard'
+import { NameInput } from '../components/NameInput'
 import { NotFoundPage } from '../NotFoundPage'
 import { Link } from '../Link'
 import { paths } from '../router'
-import { useCollection, useRenameCollection, type Collection } from './api'
+import { useSetMutations } from '../sets/api'
+import { SetsTable } from '../sets/SetsTable'
+import { useCollection, useRenameCollection } from './api'
 import styles from './CollectionPage.module.css'
 import { forget, recordVisit } from './recentCollections'
 
 export function CollectionPage({ collectionId }: { collectionId: string }) {
   const query = useCollection(collectionId)
   const collection = query.data
+  const rename = useRenameCollection(collectionId)
 
   useEffect(() => {
     if (collection) {
@@ -42,61 +46,41 @@ export function CollectionPage({ collectionId }: { collectionId: string }) {
       )}
       {collection && (
         <>
-          <CollectionName key={collection.name} collection={collection} />
+          <NameInput
+            value={collection.name}
+            label="Collection name"
+            className={styles.name}
+            onCommit={(name) => rename.mutateAsync(name)}
+          />
           <div className={styles.actions}>
+            <NewSetButton collectionId={collection.id} />
             <CopyLinkButton collectionId={collection.id} />
           </div>
+          <SetsTable collectionId={collection.id} />
         </>
       )}
     </main>
   )
 }
 
-/** The name, edited in place: saved on Enter or leaving the field, Escape cancels. */
-function CollectionName({ collection }: { collection: Collection }) {
-  const rename = useRenameCollection(collection.id)
-  const [draft, setDraft] = useState(collection.name)
-  const cancelled = useRef(false)
-
-  function commit() {
-    if (cancelled.current) {
-      cancelled.current = false
-      setDraft(collection.name)
-      return
-    }
-    const name = draft.trim()
-    if (!name || name === collection.name) {
-      setDraft(collection.name)
-      return
-    }
-    rename.mutate(name, { onError: () => setDraft(collection.name) })
-  }
-
-  function onKeyDown(event: KeyboardEvent<HTMLInputElement>) {
-    if (event.key === 'Enter') event.currentTarget.blur()
-    if (event.key === 'Escape') {
-      cancelled.current = true
-      event.currentTarget.blur()
-    }
-  }
-
+function NewSetButton({ collectionId }: { collectionId: string }) {
+  const { create } = useSetMutations(collectionId)
   return (
-    <div>
-      <input
-        className={styles.name}
-        aria-label="Collection name"
-        value={draft}
-        maxLength={200}
-        onChange={(event) => setDraft(event.target.value)}
-        onBlur={commit}
-        onKeyDown={onKeyDown}
-      />
-      {rename.isError && (
-        <p role="alert" className={styles.error}>
-          Couldn't save the name. Try again.
-        </p>
+    <>
+      <button
+        type="button"
+        className={styles.primary}
+        onClick={() => create.mutate()}
+        disabled={create.isPending}
+      >
+        + New set
+      </button>
+      {create.isError && (
+        <span role="alert" className={styles.error}>
+          Couldn't create the set. Try again.
+        </span>
       )}
-    </div>
+    </>
   )
 }
 

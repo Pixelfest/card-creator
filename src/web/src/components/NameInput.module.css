@@ -1,0 +1,23 @@
+.wrapper {
+  min-width: 0;
+}
+
+.input {
+  width: 100%;
+  padding: 0.2rem 0.3rem;
+  border: 1px dashed transparent;
+  border-radius: 4px;
+  background: transparent;
+}
+
+.input:hover,
+.input:focus {
+  border-color: var(--border);
+  background: #fff;
+}
+
+.error {
+  margin: 0.2rem 0 0;
+  color: var(--danger);
+  font-size: 0.85rem;
+}

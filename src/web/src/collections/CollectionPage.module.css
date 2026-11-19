@@ -8,18 +8,14 @@
 }
 
 .name {
-  width: 100%;
   font-size: 1.6rem;
   font-weight: 600;
-  padding: 0.2rem 0.3rem;
-  border: 1px dashed transparent;
-  background: transparent;
 }
 
-.name:hover,
-.name:focus {
-  border-color: var(--border);
-  background: #fff;
+.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
 }
 
 .actions {
