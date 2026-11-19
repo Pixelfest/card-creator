@@ -30,5 +30,6 @@ export async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> 
     }
     throw new ApiError(response.status, problem)
   }
+  if (response.status === 204) return undefined as T
   return (await response.json()) as T
 }
