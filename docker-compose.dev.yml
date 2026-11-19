@@ -1,0 +1,27 @@
+# Local development: only Postgres, on host port 5435. Run the app with `dotnet run`
+# (src/server/CardCreator.Server) and `npm run dev` (src/web).
+#
+#   docker compose -f docker-compose.dev.yml up -d
+name: cardcreator-dev
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: cardcreator
+      POSTGRES_USER: cardcreator
+      POSTGRES_PASSWORD: cardcreator
+    ports:
+      - "5435:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cardcreator -d cardcreator"]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+
+volumes:
+  pgdata:
+    name: cardcreator_pgdata_dev

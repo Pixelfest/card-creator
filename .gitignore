@@ -1,0 +1,18 @@
+# .NET
+bin/
+obj/
+*.user
+.vs/
+
+# Node
+node_modules/
+dist/
+
+# The web build is copied into wwwroot inside the Docker image only.
+src/server/CardCreator.Server/wwwroot/
+
+# Real secrets live only on the server; deploy/production.env.example is committed.
+deploy/production.env
+
+.idea/
+.DS_Store
