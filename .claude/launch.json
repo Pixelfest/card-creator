@@ -1,0 +1,6 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    { "name": "ui-prototype", "runtimeExecutable": "npm", "runtimeArgs": ["--prefix", "prototype/ui-editor", "exec", "--", "vite", "prototype/ui-editor", "--port", "5199", "--strictPort"], "port": 5199 }
+  ]
+}
