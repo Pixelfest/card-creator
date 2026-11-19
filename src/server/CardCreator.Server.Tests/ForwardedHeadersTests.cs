@@ -25,6 +25,18 @@ public class ForwardedHeadersTests(AppFactory factory) : IClassFixture<AppFactor
     }
 
     [Fact]
+    public async Task The_gateway_as_an_IPv4_mapped_IPv6_peer_is_trusted()
+    {
+        // Kestrel listens dual-stack, so Docker's gateway shows up as ::ffff:172.30.42.1.
+        var client = await ResolveClientAddress(
+            AppFactory.DockerGateway.MapToIPv6(),
+            "203.0.113.7"
+        );
+
+        Assert.Equal(IPAddress.Parse("203.0.113.7"), client);
+    }
+
+    [Fact]
     public async Task Only_the_address_nginx_appended_is_used()
     {
         // nginx's $proxy_add_x_forwarded_for appends the real peer to whatever the client sent.
