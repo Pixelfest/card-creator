@@ -17,6 +17,13 @@
   border-bottom: 1px solid #ddd;
 }
 
+.headerEnd {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
 .back {
   white-space: nowrap;
 }
