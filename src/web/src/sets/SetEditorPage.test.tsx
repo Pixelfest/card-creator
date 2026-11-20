@@ -427,6 +427,79 @@ describe('SetEditorPage', () => {
     expect(await screen.findByRole('note')).toHaveTextContent("The textbox text doesn't fit.")
   })
 
+  describe('Export to Word', () => {
+    const ghost = serverCard('cardddddddddddddddddd', 'Ghost', 2, 1, 0)
+    const lostKnight = { ...knight, design: { ...design, frame: 'frames/44x72/deleted.png' } }
+
+    function openExport(cards: unknown[] = [dragon, lostKnight, ghost]) {
+      stubApi({
+        [`GET /api/collections/${collectionId}`]: { body: collection },
+        [`GET ${setUrl}`]: { body: set },
+        [`GET ${cardsUrl}`]: { body: cards },
+        'GET /api/assets': { body: assets },
+      })
+      renderWithQuery(<SetEditorPage collectionId={collectionId} setId={setId} />)
+    }
+
+    it('lists the Cards with Copies-0 unchecked and disabled, the totals, warnings and the reminder', async () => {
+      openExport()
+      fireEvent.click(await screen.findByRole('button', { name: 'Export to Word…' }))
+      const dialog = screen.getByRole('dialog', { name: 'Export to Word' })
+
+      expect(within(dialog).getByRole('checkbox', { name: /Dragon/ })).toBeChecked()
+      expect(within(dialog).getByRole('checkbox', { name: /Knight/ })).toBeChecked()
+      const ghostBox = within(dialog).getByRole('checkbox', { name: /Ghost/ })
+      expect(ghostBox).not.toBeChecked()
+      expect(ghostBox).toBeDisabled()
+      expect(within(dialog).getByText('4 cards on 1 page')).toBeInTheDocument()
+      expect(within(dialog).getByText(/Print at 100% \/ Actual size: don't use Fit to page/)).toBeInTheDocument()
+      expect(await within(dialog).findByText(/The Frame “deleted.png” is missing./)).toBeInTheDocument()
+      expect(within(dialog).getByRole('button', { name: 'Export anyway' })).toBeEnabled()
+
+      // Unchecking Knight drops its Copies and its warning.
+      fireEvent.click(within(dialog).getByRole('checkbox', { name: /Knight/ }))
+      expect(within(dialog).getByText('1 card on 1 page')).toBeInTheDocument()
+      expect(within(dialog).queryByText(/deleted.png/)).not.toBeInTheDocument()
+      expect(within(dialog).getByRole('button', { name: 'Export' })).toBeEnabled()
+
+      fireEvent.click(within(dialog).getByRole('button', { name: 'None' }))
+      expect(within(dialog).getByText('0 cards on 0 pages')).toBeInTheDocument()
+      expect(within(dialog).getByRole('button', { name: 'Export' })).toBeDisabled()
+
+      fireEvent.click(within(dialog).getByRole('button', { name: 'Cancel' }))
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    })
+
+    it('counts pages of 12', async () => {
+      openExport([{ ...dragon, copies: 12 }, { ...knight, copies: 1 }])
+      fireEvent.click(await screen.findByRole('button', { name: 'Export to Word…' }))
+      expect(screen.getByText('13 cards on 2 pages')).toBeInTheDocument()
+    })
+
+    it('shows an error with Retry when the export fails, and downloads nothing', async () => {
+      openExport([dragon])
+      const click = vi.spyOn(HTMLAnchorElement.prototype, 'click')
+      fireEvent.click(await screen.findByRole('button', { name: 'Export to Word…' }))
+      const dialog = screen.getByRole('dialog', { name: 'Export to Word' })
+
+      // jsdom has no canvas, so rendering the card fails.
+      await waitFor(() => expect(within(dialog).getByRole('button', { name: 'Export' })).toBeEnabled())
+      fireEvent.click(within(dialog).getByRole('button', { name: 'Export' }))
+
+      expect(await within(dialog).findByRole('alert')).toHaveTextContent(/The export failed\..*Nothing was downloaded\./)
+      expect(within(dialog).getByRole('button', { name: 'Retry' })).toBeEnabled()
+      expect(click).not.toHaveBeenCalled()
+      click.mockRestore()
+    })
+
+    it('is disabled while offline', async () => {
+      const online = vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(false)
+      openExport()
+      expect(await screen.findByRole('button', { name: 'Export to Word…' })).toBeDisabled()
+      online.mockRestore()
+    })
+  })
+
   it('shows not found for a Set that is not in this Collection', async () => {
     stubApi({
       [`GET /api/collections/${collectionId}`]: { body: collection },

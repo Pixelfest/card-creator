@@ -10,6 +10,7 @@ import type { ServerCard } from '../editor/model'
 import { PartsPanel } from '../editor/PartsPanel'
 import { ConflictDialog, SaveStatus } from '../editor/SaveStatus'
 import { UndoRedo } from '../editor/UndoRedo'
+import { ExportButton } from '../export/ExportDialog'
 import { Link } from '../Link'
 import { NotFoundPage } from '../NotFoundPage'
 import { paths } from '../router'
@@ -67,6 +68,7 @@ export function SetEditorPage({ collectionId, setId }: { collectionId: string; s
           <>
             <UndoRedo />
             <SaveStatus />
+            <ExportButton setName={set.data?.name ?? ''} />
           </>
         }
       >
