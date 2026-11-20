@@ -75,6 +75,36 @@ export function SnippetProperties({ slot }: { slot: SnippetSlot }) {
         </div>
       </fieldset>
 
+      <fieldset className={styles.fonts}>
+        <legend>Background</legend>
+        <div role="radiogroup" aria-label="Background" className={styles.backgrounds}>
+          <button
+            type="button"
+            role="radio"
+            aria-checked={snippet.background === null}
+            className={styles.background}
+            onClick={() => save({ background: null })}
+          >
+            <span className={`${styles.backgroundThumb} ${styles.none}`} aria-hidden="true" />
+            None
+          </button>
+          {manifest?.snippetBackgrounds.map((bg) => (
+            <button
+              key={bg.path}
+              type="button"
+              role="radio"
+              aria-checked={snippet.background === bg.path}
+              className={styles.background}
+              onClick={() => save({ background: bg.path })}
+            >
+              <img className={styles.backgroundThumb} src={bg.url} alt="" loading="lazy" />
+              {bg.displayName}
+            </button>
+          ))}
+        </div>
+        {snippet.background && <small className={styles.hint}>The box takes the background's proportions.</small>}
+      </fieldset>
+
       <RangeField
         label="Size"
         value={snippet.size}

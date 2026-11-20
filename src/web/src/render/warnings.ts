@@ -30,6 +30,9 @@ export function missingAssetWarnings(design: CardDesign, manifest: AssetManifest
     if (snippet?.font && !manifest.fonts.some((f) => f.path === snippet.font)) {
       warnings.push({ part: slot, message: `The font “${fileName(snippet.font)}” is missing; a fallback font is shown.` })
     }
+    if (snippet?.background && !manifest.snippetBackgrounds.some((b) => b.path === snippet.background)) {
+      warnings.push({ part: slot, message: `The background “${fileName(snippet.background)}” is missing.` })
+    }
   }
   return warnings
 }
