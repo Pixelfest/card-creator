@@ -8,6 +8,7 @@ import { CardProperties } from '../editor/CardProperties'
 import { EditorProvider } from '../editor/EditorProvider'
 import type { ServerCard } from '../editor/model'
 import { ConflictDialog, SaveStatus } from '../editor/SaveStatus'
+import { UndoRedo } from '../editor/UndoRedo'
 import { Link } from '../Link'
 import { NotFoundPage } from '../NotFoundPage'
 import { paths } from '../router'
@@ -58,7 +59,16 @@ export function SetEditorPage({ collectionId, setId }: { collectionId: string; s
 
   return (
     <EditorProvider collectionId={collectionId} setId={setId} initial={cards.data}>
-      <Layout collectionId={collectionId} setId={setId} status={<SaveStatus />}>
+      <Layout
+        collectionId={collectionId}
+        setId={setId}
+        status={
+          <>
+            <UndoRedo />
+            <SaveStatus />
+          </>
+        }
+      >
         <CardList />
       </Layout>
       <ConflictDialog />

@@ -1,5 +1,6 @@
 import { createStore, type StoreApi } from 'zustand/vanilla'
 import type { CardsApi } from './cardsApi'
+import { emptyHistory, record, redo, undo, type History } from './history'
 import { deepEqual, type Card, type ServerCard } from './model'
 import { Saver, type Conflict, type SaveStatus } from './saver'
 
@@ -12,7 +13,7 @@ export type EditorChange = {
   select?: string | null
 }
 
-/** What every committed change reports, for undo/redo (#21). */
+/** What every committed change reports to `onCommit` listeners. */
 export type CommittedChange = { cardId: string | null; before: Card[]; after: Card[] }
 
 export type EditorState = {
@@ -20,11 +21,15 @@ export type EditorState = {
   selectedId: string | null
   status: SaveStatus
   conflict: Conflict | null
-  /** The one way to change Cards: applies the change, then saves it. */
+  /** Undo/redo for this editor only: cleared on reload or when switching Set. */
+  history: History
+  /** The one way to change Cards: applies the change, records it for undo, then saves it. */
   commit: (change: EditorChange) => void
-  /** Replaces all Cards (undo/redo) without recording a new change; still saved. */
+  /** Replaces all Cards without recording a new change (undo/redo); still saved. */
   restore: (cards: Card[], select: string | null) => void
   select: (cardId: string | null) => void
+  undo: () => void
+  redo: () => void
   resolveConflict: (choice: 'theirs' | 'mine') => void
 }
 
@@ -57,6 +62,7 @@ export function createEditor({
     selectedId: initial[0]?.id ?? null,
     status: 'saved',
     conflict: null,
+    history: emptyHistory,
 
     commit: (change) => {
       const { cardId } = change
@@ -65,7 +71,11 @@ export function createEditor({
       if (deepEqual(before, after)) return
       // Read after apply: some changes only know what to select once they have run.
       const selected = change.select === undefined ? cardId : change.select
-      set({ cards: after, selectedId: stillThere(after, selected) ?? stillThere(after, get().selectedId) })
+      set({
+        cards: after,
+        selectedId: stillThere(after, selected) ?? stillThere(after, get().selectedId),
+        history: record(get().history, { cardId, before, after }),
+      })
       for (const listener of listeners) listener({ cardId, before, after })
       saver.schedule()
     },
@@ -76,6 +86,21 @@ export function createEditor({
     },
 
     select: (cardId) => set({ selectedId: stillThere(get().cards, cardId) }),
+
+    // Undo and redo select the affected Card and save the result like any other change.
+    undo: () => {
+      const travel = undo(get().history, get().cards)
+      if (!travel) return
+      set({ history: travel.history })
+      get().restore(travel.cards, travel.select)
+    },
+
+    redo: () => {
+      const travel = redo(get().history, get().cards)
+      if (!travel) return
+      set({ history: travel.history })
+      get().restore(travel.cards, travel.select)
+    },
 
     resolveConflict: (choice) => {
       const conflict = get().conflict
