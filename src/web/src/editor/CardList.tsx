@@ -139,7 +139,7 @@ export function CardList() {
           }}
           onCancel={() => setDeleting(null)}
         >
-          <p>This removes the card from the set.</p>
+          <p>You can undo this.</p>
         </ConfirmDialog>
       )}
     </div>

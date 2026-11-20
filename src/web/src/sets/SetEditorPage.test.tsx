@@ -193,6 +193,46 @@ describe('SetEditorPage', () => {
     await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent('All changes saved'))
   })
 
+  it('Undo and Redo in the header restore a deleted card and select it', async () => {
+    const fetchMock = stubEditor({
+      [`DELETE ${cardsUrl}/${dragon.id}`]: { status: 204 },
+      [`POST ${cardsUrl}`]: { status: 201, body: {} },
+    })
+    renderWithQuery(<SetEditorPage collectionId={collectionId} setId={setId} />)
+    const undoButton = await screen.findByRole('button', { name: '↶ Undo' })
+    expect(undoButton).toBeDisabled()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Delete Dragon' }))
+    fireEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Delete card' }))
+    await waitFor(() => expect(calls(fetchMock, 'DELETE')).toHaveLength(1))
+
+    fireEvent.click(undoButton)
+
+    expect(screen.getByLabelText('Card name')).toHaveValue('Dragon')
+    expect(screen.getByRole('button', { name: 'Dragon' })).toHaveAttribute('aria-current', 'true')
+    await waitFor(() => expect(calls(fetchMock, 'POST')).toHaveLength(1))
+    expect(JSON.parse(String(calls(fetchMock, 'POST')[0][1]?.body))).toMatchObject({ id: dragon.id, position: 0 })
+    expect(screen.getByRole('button', { name: '↷ Redo' })).toBeEnabled()
+  })
+
+  it('Ctrl+Z undoes outside text fields, but not while typing in one', async () => {
+    stubEditor({ [`PUT ${cardsUrl}/${dragon.id}`]: (init) => ({ body: { ...dragon, ...JSON.parse(String(init?.body)), version: 2 } }) })
+    renderWithQuery(<SetEditorPage collectionId={collectionId} setId={setId} />)
+    const name = await screen.findByLabelText('Card name')
+    fireEvent.change(name, { target: { value: 'Red dragon' } })
+    fireEvent.blur(name)
+    expect(await screen.findByRole('button', { name: 'Red dragon' })).toBeInTheDocument()
+
+    fireEvent.keyDown(screen.getByLabelText('Card name'), { key: 'z', ctrlKey: true })
+    expect(screen.getByRole('button', { name: 'Red dragon' })).toBeInTheDocument()
+
+    fireEvent.keyDown(document.body, { key: 'z', ctrlKey: true })
+    expect(screen.getByRole('button', { name: 'Dragon' })).toBeInTheDocument()
+
+    fireEvent.keyDown(document.body, { key: 'y', ctrlKey: true })
+    expect(screen.getByRole('button', { name: 'Red dragon' })).toBeInTheDocument()
+  })
+
   it('shows not found for a Set that is not in this Collection', async () => {
     stubApi({
       [`GET /api/collections/${collectionId}`]: { body: collection },
