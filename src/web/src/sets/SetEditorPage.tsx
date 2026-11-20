@@ -4,9 +4,10 @@ import { fetchJson, isNotFound } from '../api/http'
 import { useCollection } from '../collections/api'
 import { NameInput } from '../components/NameInput'
 import { CardList } from '../editor/CardList'
-import { CardProperties } from '../editor/CardProperties'
+import { CardStage } from '../editor/CardStage'
 import { EditorProvider } from '../editor/EditorProvider'
 import type { ServerCard } from '../editor/model'
+import { PartsPanel } from '../editor/PartsPanel'
 import { ConflictDialog, SaveStatus } from '../editor/SaveStatus'
 import { UndoRedo } from '../editor/UndoRedo'
 import { Link } from '../Link'
@@ -120,10 +121,10 @@ function Layout({
         {children}
       </aside>
       <main className={styles.stage} aria-label="Card">
-        <div className={styles.cardPlaceholder}>Card</div>
+        {status ? <CardStage /> : null}
       </main>
       <aside className={styles.properties} aria-label="Properties">
-        {status ? <CardProperties /> : null}
+        {status ? <PartsPanel /> : null}
       </aside>
     </div>
   )
