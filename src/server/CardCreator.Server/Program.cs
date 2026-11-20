@@ -1,5 +1,6 @@
 using CardCreator.Server;
 using CardCreator.Server.Assets;
+using CardCreator.Server.Cards;
 using CardCreator.Server.Collections;
 using CardCreator.Server.Data;
 using CardCreator.Server.Sets;
@@ -39,6 +40,7 @@ app.MapGet(
 
 app.MapCollectionEndpoints();
 app.MapSetEndpoints();
+app.MapCardEndpoints();
 app.MapAssetEndpoints();
 
 // Unknown API paths are a real 404, never the SPA's index.html.
