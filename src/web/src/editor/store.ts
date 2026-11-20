@@ -1,7 +1,8 @@
 import { createStore, type StoreApi } from 'zustand/vanilla'
 import type { CardsApi } from './cardsApi'
 import { emptyHistory, record, redo, undo, type History } from './history'
-import { deepEqual, type Card, type ServerCard } from './model'
+import type { CardPart } from '../render/warnings'
+import { deepEqual, type Card, type CardDesign, type ServerCard } from './model'
 import { Saver, type Conflict, type SaveStatus } from './saver'
 
 /** One finished edit: a function from the Cards before to the Cards after. */
@@ -23,6 +24,13 @@ export type EditorState = {
   conflict: Conflict | null
   /** Undo/redo for this editor only: cleared on reload or when switching Set. */
   history: History
+  /** Which part's properties the right-hand panel shows. */
+  part: CardPart
+  /**
+   * A change being made but not finished yet (a colour picker still open, a slider or drag
+   * still held): shown on the canvas, not saved and not in history until committed.
+   */
+  preview: { cardId: string; design: Partial<CardDesign> } | null
   /** The one way to change Cards: applies the change, records it for undo, then saves it. */
   commit: (change: EditorChange) => void
   /** Replaces all Cards without recording a new change (undo/redo); still saved. */
@@ -30,6 +38,8 @@ export type EditorState = {
   select: (cardId: string | null) => void
   undo: () => void
   redo: () => void
+  selectPart: (part: CardPart) => void
+  setPreview: (preview: EditorState['preview']) => void
   resolveConflict: (choice: 'theirs' | 'mine') => void
 }
 
@@ -63,6 +73,8 @@ export function createEditor({
     status: 'saved',
     conflict: null,
     history: emptyHistory,
+    part: 'card',
+    preview: null,
 
     commit: (change) => {
       const { cardId } = change
@@ -75,6 +87,7 @@ export function createEditor({
         cards: after,
         selectedId: stillThere(after, selected) ?? stillThere(after, get().selectedId),
         history: record(get().history, { cardId, before, after }),
+        preview: null,
       })
       for (const listener of listeners) listener({ cardId, before, after })
       saver.schedule()
@@ -85,7 +98,11 @@ export function createEditor({
       saver.schedule()
     },
 
-    select: (cardId) => set({ selectedId: stillThere(get().cards, cardId) }),
+    select: (cardId) => set({ selectedId: stillThere(get().cards, cardId), preview: null }),
+
+    selectPart: (part) => set({ part }),
+
+    setPreview: (preview) => set({ preview }),
 
     // Undo and redo select the affected Card and save the result like any other change.
     undo: () => {
