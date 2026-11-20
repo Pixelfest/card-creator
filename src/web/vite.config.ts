@@ -9,7 +9,12 @@ export default defineConfig({
     proxy: {
       '/api': 'http://localhost:5080',
       '/health': 'http://localhost:5080',
+      '/assets': 'http://localhost:5080',
     },
+  },
+  // The server owns /assets (the content-hashed asset library), so the build uses /static.
+  build: {
+    assetsDir: 'static',
   },
   test: {
     environment: 'jsdom',

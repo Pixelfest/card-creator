@@ -6,6 +6,10 @@ describe('matchRoute', () => {
     expect(matchRoute('/')).toEqual({ name: 'home' })
   })
 
+  it('matches the Credits page', () => {
+    expect(matchRoute('/credits')).toEqual({ name: 'credits' })
+  })
+
   it('matches a Collection URL', () => {
     expect(matchRoute('/c/3f9XkQ2bL0aZ7yT1mN4pRs')).toEqual({
       name: 'collection',

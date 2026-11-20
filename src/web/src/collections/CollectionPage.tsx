@@ -1,3 +1,4 @@
+import { Footer } from '../components/Footer'
 import { useEffect, useState } from 'react'
 import { isNotFound } from '../api/http'
 import { copyText } from '../clipboard'
@@ -33,6 +34,7 @@ export function CollectionPage({ collectionId }: { collectionId: string }) {
   }
 
   return (
+    <>
     <main className={styles.page}>
       <Link href={paths.home()}>← Home</Link>
       {query.isPending && <p className={styles.hint}>Loading…</p>}
@@ -60,6 +62,8 @@ export function CollectionPage({ collectionId }: { collectionId: string }) {
         </>
       )}
     </main>
+      <Footer />
+    </>
   )
 }
 
