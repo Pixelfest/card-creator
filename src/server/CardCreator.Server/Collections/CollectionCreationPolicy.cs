@@ -30,6 +30,9 @@ public sealed class CollectionCreationPolicy
 
     public bool IsAllowed(IPAddress? client) => client is not null && _allowed.Contains(Normalize(client));
 
+    /// <summary>The client IP as it should be written in the allowlist, or null if unknown.</summary>
+    public static string? Describe(IPAddress? client) => client is null ? null : Normalize(client).ToString();
+
     // Kestrel listens dual-stack, so an IPv4 client can show up as ::ffff:a.b.c.d.
     private static IPAddress Normalize(IPAddress address) =>
         address.IsIPv4MappedToIPv6 ? address.MapToIPv4() : address;
