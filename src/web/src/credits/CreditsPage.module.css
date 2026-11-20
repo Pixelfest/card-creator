@@ -1,0 +1,24 @@
+.page {
+  max-width: 44rem;
+  margin: 3rem auto 1rem;
+  padding: 0 1rem;
+}
+
+.credits h2:first-child {
+  display: none; /* CREDITS.md's own "# Credits" title duplicates the page heading */
+}
+
+.credits code {
+  font-size: 0.9em;
+  background: #e9e6df;
+  padding: 0 0.2em;
+  border-radius: 3px;
+}
+
+.hint {
+  color: var(--muted);
+}
+
+.error {
+  color: var(--danger);
+}

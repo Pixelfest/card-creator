@@ -1,3 +1,4 @@
+import { Footer } from '../components/Footer'
 import { useEffect, useState } from 'react'
 import { useCollectionCreation, useCreateCollection } from '../collections/api'
 import { loadRecent, openedLabel } from '../collections/recentCollections'
@@ -22,6 +23,7 @@ export function HomePage() {
   }
 
   return (
+    <>
     <main className={styles.page}>
       <h1>Card Creator</h1>
 
@@ -65,5 +67,7 @@ export function HomePage() {
         )}
       </section>
     </main>
+      <Footer />
+    </>
   )
 }

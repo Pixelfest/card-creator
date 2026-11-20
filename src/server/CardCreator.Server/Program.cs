@@ -1,4 +1,5 @@
 using CardCreator.Server;
+using CardCreator.Server.Assets;
 using CardCreator.Server.Collections;
 using CardCreator.Server.Data;
 using CardCreator.Server.Sets;
@@ -12,6 +13,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("Default"))
 );
 builder.Services.AddSingleton<CollectionCreationPolicy>();
+builder.Services.AddAssetLibrary(builder.Configuration, builder.Environment);
 
 var app = builder.Build();
 
@@ -24,6 +26,9 @@ using (var scope = app.Services.CreateScope())
     scope.ServiceProvider.GetRequiredService<AppDbContext>().Database.Migrate();
 }
 
+// Scan the asset library now, so problems are logged at startup.
+app.Services.GetRequiredService<AssetLibrary>();
+
 app.MapGet(
     "/health",
     async (AppDbContext db, CancellationToken ct) =>
@@ -34,6 +39,7 @@ app.MapGet(
 
 app.MapCollectionEndpoints();
 app.MapSetEndpoints();
+app.MapAssetEndpoints();
 
 // Unknown API paths are a real 404, never the SPA's index.html.
 app.MapGroup("/api").MapFallback(() => Results.NotFound());

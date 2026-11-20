@@ -1,0 +1,2 @@
+# Assets are served byte-for-byte with content-hashed URLs; never convert their line endings.
+assets/** -text
