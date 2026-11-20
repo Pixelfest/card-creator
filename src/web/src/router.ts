@@ -4,6 +4,7 @@ import { useSyncExternalStore } from 'react'
 
 export type Route =
   | { name: 'home' }
+  | { name: 'credits' }
   | { name: 'collection'; collectionId: string }
   | { name: 'set'; collectionId: string; setId: string }
   | { name: 'notFound' }
@@ -13,6 +14,7 @@ const setPath = /^\/c\/([0-9A-Za-z]{22})\/s\/([0-9A-Za-z]{22})\/?$/
 
 export function matchRoute(pathname: string): Route {
   if (pathname === '/') return { name: 'home' }
+  if (pathname === '/credits') return { name: 'credits' }
   const collection = collectionPath.exec(pathname)
   if (collection) return { name: 'collection', collectionId: collection[1] }
   const set = setPath.exec(pathname)
@@ -22,6 +24,7 @@ export function matchRoute(pathname: string): Route {
 
 export const paths = {
   home: () => '/',
+  credits: () => '/credits',
   collection: (collectionId: string) => `/c/${collectionId}`,
   set: (collectionId: string, setId: string) => `/c/${collectionId}/s/${setId}`,
 }

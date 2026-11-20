@@ -24,6 +24,22 @@ public sealed class AppFactory : WebApplicationFactory<Program>, IAsyncLifetime
 
     public string ConnectionString => _postgres.GetConnectionString();
 
+    /// <summary>The repository's assets folder, found by walking up from the test binaries.</summary>
+    public static string RepositoryAssets { get; } = FindRepositoryAssets();
+
+    private static string FindRepositoryAssets()
+    {
+        for (var dir = new DirectoryInfo(AppContext.BaseDirectory); dir is not null; dir = dir.Parent)
+        {
+            var candidate = Path.Combine(dir.FullName, "assets");
+            if (File.Exists(Path.Combine(candidate, "CREDITS.md")))
+            {
+                return candidate;
+            }
+        }
+        throw new InvalidOperationException("Could not find the repository's assets folder.");
+    }
+
     /// <summary>The address the test server pretends the TCP connection came from.</summary>
     public IPAddress PeerAddress { get; set; } = DockerGateway;
 
@@ -35,6 +51,7 @@ public sealed class AppFactory : WebApplicationFactory<Program>, IAsyncLifetime
         builder.UseEnvironment("Production");
         builder.UseSetting("ConnectionStrings:Default", _postgres.GetConnectionString());
         builder.UseSetting("CollectionCreation:AllowedIps:0", AllowlistedClient.ToString());
+        builder.UseSetting("Assets:Path", RepositoryAssets);
         builder.ConfigureServices(services =>
             services.AddSingleton<IStartupFilter>(new PeerAddressFilter(this))
         );

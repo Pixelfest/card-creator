@@ -1,4 +1,5 @@
 import { CollectionPage } from './collections/CollectionPage'
+import { CreditsPage } from './credits/CreditsPage'
 import { HomePage } from './home/HomePage'
 import { NotFoundPage } from './NotFoundPage'
 import { SetEditorPage } from './sets/SetEditorPage'
@@ -9,6 +10,8 @@ export function App() {
   switch (route.name) {
     case 'home':
       return <HomePage />
+    case 'credits':
+      return <CreditsPage />
     case 'collection':
       return <CollectionPage key={route.collectionId} collectionId={route.collectionId} />
     case 'set':
