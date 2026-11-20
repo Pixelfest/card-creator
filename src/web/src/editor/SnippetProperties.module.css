@@ -1,0 +1,100 @@
+.fields {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.field textarea {
+  font: inherit;
+  font-size: 1rem;
+  color: var(--text);
+  padding: 0.35rem 0.45rem;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  resize: vertical;
+}
+
+.fonts {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.fonts legend {
+  padding: 0 0 0.25rem;
+}
+
+.fontList {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(7.5rem, 1fr));
+  gap: 0.35rem;
+}
+
+.font {
+  font-size: 1.05rem;
+  padding: 0.35rem 0.5rem;
+  text-align: left;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.font[aria-checked='true'],
+.align button[aria-checked='true'] {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent);
+}
+
+.outline {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-end;
+}
+
+.check {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding-bottom: 0.4rem;
+  font-size: 0.9rem;
+}
+
+.align {
+  display: flex;
+  gap: 0.35rem;
+}
+
+.align button {
+  min-width: 2.4rem;
+}
+
+.remove {
+  align-self: flex-start;
+  color: var(--danger);
+}
+
+.warning {
+  margin: 0;
+  padding: 0.5rem 0.6rem;
+  border: 1px solid #f0c070;
+  border-radius: 6px;
+  background: #fff4e0;
+  font-size: 0.85rem;
+}
+
+.hint {
+  margin-top: -0.5rem;
+  color: var(--muted);
+  font-size: 0.8rem;
+}

@@ -1,7 +1,28 @@
 import type { ArtworkRef } from '../render/artwork'
 
-// The Card model as the editor holds it. `design` is stored by the server as opaque jsonb;
-// later slices add Text snippets (#25) to it.
+// The Card model as the editor holds it. `design` is stored by the server as opaque jsonb.
+
+export type SnippetSlot = 'header' | 'banner' | 'textbox'
+export const SNIPPET_SLOTS: readonly SnippetSlot[] = ['header', 'banner', 'textbox']
+
+/** A piece of styled text in one Snippet slot (docs/spec.md, section 6). */
+export type Snippet = {
+  text: string
+  /** Asset path of the font file (one file is one font), or null for the fallback. */
+  font: string | null
+  /** In points, 5–36. */
+  size: number
+  color: string
+  outline: boolean
+  outlineColor: string
+  align: 'left' | 'center' | 'right'
+  /** Vertical centre of the box, 0–100% of the Card height. */
+  position: number
+  /** Box width, 25–200% of the Card width. */
+  zoom: number
+  /** Asset path of a Snippet background (#26), or null. */
+  background: string | null
+}
 
 export type CardDesign = {
   /** Fill colour behind everything, e.g. "#ffffff". */
@@ -10,7 +31,8 @@ export type CardDesign = {
   frame: string | null
   /** The uploaded Artwork and where it sits, or null. */
   artwork: ArtworkRef | null
-  snippets: Record<string, unknown>
+  /** At most one per slot. */
+  snippets: Partial<Record<SnippetSlot, Snippet>>
 }
 
 export type CardContent = { name: string; copies: number; design: CardDesign }

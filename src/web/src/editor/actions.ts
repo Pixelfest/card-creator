@@ -1,4 +1,4 @@
-import { duplicateCard, move, newCard, type Card, type CardContent } from './model'
+import { duplicateCard, move, newCard, type Card, type CardContent, type Snippet, type SnippetSlot } from './model'
 import type { EditorChange } from './store'
 
 // The card-list and properties edits, each expressed as one EditorChange.
@@ -64,5 +64,33 @@ export function updateDesign(cardId: string, patch: Partial<Card['design']>): Ed
   return {
     cardId,
     apply: (cards) => cards.map((c) => (c.id === cardId ? { ...c, design: { ...c.design, ...patch } } : c)),
+  }
+}
+
+/** Puts a snippet in a slot, or empties the slot (null). */
+export function setSnippet(cardId: string, slot: SnippetSlot, snippet: Snippet | null): EditorChange {
+  return {
+    cardId,
+    apply: (cards) =>
+      cards.map((c) => {
+        if (c.id !== cardId) return c
+        const snippets = { ...c.design.snippets }
+        if (snippet) snippets[slot] = snippet
+        else delete snippets[slot]
+        return { ...c, design: { ...c.design, snippets } }
+      }),
+  }
+}
+
+/** Changes some fields of the snippet in a slot (nothing if the slot is empty). */
+export function patchSnippet(cardId: string, slot: SnippetSlot, patch: Partial<Snippet>): EditorChange {
+  return {
+    cardId,
+    apply: (cards) =>
+      cards.map((c) => {
+        const current = c.id === cardId ? c.design.snippets[slot] : undefined
+        if (!current) return c
+        return { ...c, design: { ...c.design, snippets: { ...c.design.snippets, [slot]: { ...current, ...patch } } } }
+      }),
   }
 }

@@ -1,0 +1,172 @@
+import { useState } from 'react'
+import { useAssets } from '../assets/api'
+import { ColourField } from '../components/ColourField'
+import { RangeField } from '../components/RangeField'
+import { cardWarnings } from '../render/warnings'
+import { ptToUnits } from '../render/units'
+import { familyName } from '../text/fonts'
+import { useTextResources } from '../text/useTextResources'
+import * as actions from './actions'
+import { useEditor } from './editorHooks'
+import type { Card, Snippet, SnippetSlot } from './model'
+import { MAX_SIZE, MAX_SNIPPET_ZOOM, MIN_SIZE, MIN_SNIPPET_ZOOM, SLOT_LABELS } from './snippets'
+import styles from './SnippetProperties.module.css'
+
+const ALIGNMENTS: { value: Snippet['align']; label: string; icon: string }[] = [
+  { value: 'left', label: 'Align left', icon: '⯇' },
+  { value: 'center', label: 'Centre', icon: '≡' },
+  { value: 'right', label: 'Align right', icon: '⯈' },
+]
+
+/** One Text snippet's properties (docs/spec.md, section 7). */
+export function SnippetProperties({ slot }: { slot: SnippetSlot }) {
+  const card = useEditor((s) => s.cards.find((c) => c.id === s.selectedId))
+  const preview = useEditor((s) => s.preview)
+  const commit = useEditor((s) => s.commit)
+  const setPreview = useEditor((s) => s.setPreview)
+  const manifest = useAssets().data
+  const text = useTextResources()
+
+  if (!card) return null
+  const saved = card.design.snippets[slot]
+  if (!saved) return null
+  // While a slider, picker or drag is held, show its value.
+  const snippet = (preview?.cardId === card.id && preview.design.snippets?.[slot]) || saved
+  const cardId = card.id
+
+  const show = (patch: Partial<Snippet>) =>
+    setPreview({ cardId, design: { snippets: { ...card.design.snippets, [slot]: { ...snippet, ...patch } } } })
+  const save = (patch: Partial<Snippet>) => {
+    commit(actions.patchSnippet(cardId, slot, patch))
+    setPreview(null)
+  }
+
+  const warnings = cardWarnings(card.design, manifest, text).filter((w) => w.part === slot)
+  const layout = text?.layout(snippet)
+  const shrunkTo = layout?.shrunk && layout.fits ? Math.round((layout.fontSize / ptToUnits(1)) * 10) / 10 : null
+
+  return (
+    <div className={styles.fields}>
+      {warnings.map((w) => (
+        <p key={w.message} role="note" className={styles.warning}>
+          ⚠ {w.message}
+        </p>
+      ))}
+
+      <SnippetText key={`${cardId}:${slot}:${saved.text}`} card={card} slot={slot} value={saved.text} />
+
+      <fieldset className={styles.fonts}>
+        <legend>Font</legend>
+        <div role="radiogroup" aria-label="Font" className={styles.fontList}>
+          {manifest?.fonts.map((font) => (
+            <button
+              key={font.path}
+              type="button"
+              role="radio"
+              aria-checked={snippet.font === font.path}
+              className={styles.font}
+              style={{ fontFamily: `"${familyName(font)}", serif` }}
+              disabled={text?.fonts.failed.has(font.path)}
+              onClick={() => save({ font: font.path })}
+            >
+              {font.displayName}
+            </button>
+          ))}
+        </div>
+      </fieldset>
+
+      <RangeField
+        label="Size"
+        value={snippet.size}
+        min={MIN_SIZE}
+        max={MAX_SIZE}
+        format={(v) => `${v} pt`}
+        onPreview={(size) => show({ size })}
+        onCommit={(size) => save({ size })}
+      />
+      {shrunkTo !== null && <small className={styles.hint}>Shrunk to {shrunkTo} pt to fit.</small>}
+
+      <ColourField
+        key={`colour:${cardId}:${slot}:${saved.color}`}
+        label="Colour"
+        value={saved.color}
+        onPreview={(color) => show({ color })}
+        onCommit={(color) => save({ color })}
+      />
+
+      <div className={styles.outline}>
+        <label className={styles.check}>
+          <input type="checkbox" checked={snippet.outline} onChange={(e) => save({ outline: e.target.checked })} />
+          Outline
+        </label>
+        <ColourField
+          key={`outline:${cardId}:${slot}:${saved.outlineColor}`}
+          label="Outline colour"
+          value={saved.outlineColor}
+          disabled={!snippet.outline}
+          onPreview={(outlineColor) => show({ outlineColor })}
+          onCommit={(outlineColor) => save({ outlineColor })}
+        />
+      </div>
+
+      <div role="radiogroup" aria-label="Alignment" className={styles.align}>
+        {ALIGNMENTS.map((a) => (
+          <button
+            key={a.value}
+            type="button"
+            role="radio"
+            aria-checked={snippet.align === a.value}
+            aria-label={a.label}
+            onClick={() => save({ align: a.value })}
+          >
+            {a.icon}
+          </button>
+        ))}
+      </div>
+
+      <RangeField
+        label="Vertical position"
+        value={snippet.position}
+        min={0}
+        max={100}
+        step={0.5}
+        format={(v) => `${Math.round(v)}%`}
+        onPreview={(position) => show({ position })}
+        onCommit={(position) => save({ position })}
+      />
+      <RangeField
+        label="Zoom"
+        value={snippet.zoom}
+        min={MIN_SNIPPET_ZOOM}
+        max={MAX_SNIPPET_ZOOM}
+        format={(v) => `${Math.round(v)}%`}
+        onPreview={(zoom) => show({ zoom })}
+        onCommit={(zoom) => save({ zoom })}
+      />
+      <small className={styles.hint}>On the card: drag the text up or down, scroll over it to zoom.</small>
+
+      <button type="button" className={styles.remove} onClick={() => commit(actions.setSnippet(cardId, slot, null))}>
+        Remove {SLOT_LABELS[slot].toLowerCase()}
+      </button>
+    </div>
+  )
+}
+
+/** The text, edited freely and saved when the field loses focus. Emoji are allowed. */
+function SnippetText({ card, slot, value }: { card: Card; slot: SnippetSlot; value: string }) {
+  const commit = useEditor((s) => s.commit)
+  const [draft, setDraft] = useState(value)
+  return (
+    <label className={styles.field}>
+      <span>Text</span>
+      <textarea
+        rows={3}
+        value={draft}
+        onChange={(event) => setDraft(event.target.value)}
+        onBlur={() => {
+          if (draft !== value) commit(actions.patchSnippet(card.id, slot, { text: draft }))
+        }}
+      />
+    </label>
+  )
+}
