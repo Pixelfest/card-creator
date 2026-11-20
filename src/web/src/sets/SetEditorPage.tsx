@@ -1,29 +1,85 @@
-import { useEffect } from 'react'
-import { isNotFound } from '../api/http'
+import { useQuery } from '@tanstack/react-query'
+import { useEffect, type ReactNode } from 'react'
+import { fetchJson, isNotFound } from '../api/http'
 import { useCollection } from '../collections/api'
 import { NameInput } from '../components/NameInput'
+import { CardList } from '../editor/CardList'
+import { CardProperties } from '../editor/CardProperties'
+import { EditorProvider } from '../editor/EditorProvider'
+import type { ServerCard } from '../editor/model'
+import { ConflictDialog, SaveStatus } from '../editor/SaveStatus'
 import { Link } from '../Link'
 import { NotFoundPage } from '../NotFoundPage'
 import { paths } from '../router'
 import { useSet, useSetMutations } from './api'
 import styles from './SetEditorPage.module.css'
 
-/**
- * The Set editor (docs/spec.md, section 7). This is the shell: header, and placeholder areas
- * for the card list, the card and the properties panel, which later slices fill in.
- */
+/** The Set's Cards, fetched fresh each time the editor opens; the editor owns them after. */
+function useInitialCards(collectionId: string, setId: string) {
+  return useQuery({
+    queryKey: ['collection', collectionId, 'sets', setId, 'cards'],
+    queryFn: () => fetchJson<ServerCard[]>(`/api/collections/${collectionId}/sets/${setId}/cards`),
+    gcTime: 0,
+    staleTime: Infinity,
+    refetchOnWindowFocus: false,
+    retry: (failureCount, error) => !isNotFound(error) && failureCount < 3,
+  })
+}
+
+/** The Set editor (docs/spec.md, section 7): card list, the card, and its properties. */
 export function SetEditorPage({ collectionId, setId }: { collectionId: string; setId: string }) {
-  const collection = useCollection(collectionId)
   const set = useSet(collectionId, setId)
-  const { rename } = useSetMutations(collectionId)
+  const cards = useInitialCards(collectionId, setId)
 
   useEffect(() => {
     if (set.data) document.title = set.data.name
   }, [set.data])
 
-  if (isNotFound(set.error)) {
+  if (isNotFound(set.error) || isNotFound(cards.error)) {
     return <NotFoundPage message="There is no set at this link. Check that you copied all of it." />
   }
+
+  if (!cards.data) {
+    return (
+      <Layout collectionId={collectionId} setId={setId}>
+        {cards.isError ? (
+          <p role="alert" className={styles.error}>
+            Couldn't load the cards.{' '}
+            <button type="button" onClick={() => cards.refetch()}>
+              Retry
+            </button>
+          </p>
+        ) : (
+          <p className={styles.hint}>Loading…</p>
+        )}
+      </Layout>
+    )
+  }
+
+  return (
+    <EditorProvider collectionId={collectionId} setId={setId} initial={cards.data}>
+      <Layout collectionId={collectionId} setId={setId} status={<SaveStatus />}>
+        <CardList />
+      </Layout>
+      <ConflictDialog />
+    </EditorProvider>
+  )
+}
+
+function Layout({
+  collectionId,
+  setId,
+  status,
+  children,
+}: {
+  collectionId: string
+  setId: string
+  status?: ReactNode
+  children: ReactNode
+}) {
+  const collection = useCollection(collectionId)
+  const set = useSet(collectionId, setId)
+  const { rename } = useSetMutations(collectionId)
 
   return (
     <div className={styles.editor}>
@@ -39,8 +95,7 @@ export function SetEditorPage({ collectionId, setId }: { collectionId: string; s
             onCommit={(name) => rename.mutateAsync({ setId, name })}
           />
         )}
-        {set.isPending && <span className={styles.hint}>Loading…</span>}
-        {set.isError && (
+        {set.isError && !isNotFound(set.error) && (
           <span role="alert" className={styles.error}>
             Couldn't load the set.{' '}
             <button type="button" onClick={() => set.refetch()}>
@@ -48,16 +103,17 @@ export function SetEditorPage({ collectionId, setId }: { collectionId: string; s
             </button>
           </span>
         )}
+        <div className={styles.headerEnd}>{status}</div>
       </header>
 
-      <aside className={styles.cardList} aria-label="Cards">
-        <p className={styles.placeholder}>Card list</p>
+      <aside className={styles.cardList} aria-label="Card list">
+        {children}
       </aside>
       <main className={styles.stage} aria-label="Card">
         <div className={styles.cardPlaceholder}>Card</div>
       </main>
       <aside className={styles.properties} aria-label="Properties">
-        <p className={styles.placeholder}>Properties</p>
+        {status ? <CardProperties /> : null}
       </aside>
     </div>
   )

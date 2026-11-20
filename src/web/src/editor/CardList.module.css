@@ -1,0 +1,98 @@
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.3rem 0.35rem;
+  border-radius: 6px;
+  border-top: 2px solid transparent;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+}
+
+.item:hover {
+  background: #f1efea;
+}
+
+.selected,
+.selected:hover {
+  background: #e3ecfb;
+}
+
+.dragging {
+  opacity: 0.4;
+}
+
+.dropBefore {
+  border-top-color: var(--accent);
+}
+
+.dropAfter {
+  border-bottom-color: var(--accent);
+}
+
+.grip {
+  color: #aaa;
+  cursor: grab;
+  font-size: 0.8rem;
+  letter-spacing: -2px;
+}
+
+.name {
+  flex: 1;
+  min-width: 0;
+  padding: 0.1rem 0.2rem;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.copies {
+  color: var(--muted);
+  font-size: 0.85rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.icon {
+  padding: 0.05rem 0.35rem;
+  border-color: transparent;
+  background: transparent;
+  color: var(--muted);
+}
+
+.icon:hover {
+  border-color: var(--border);
+  background: #fff;
+}
+
+.add {
+  align-self: stretch;
+}
+
+.empty {
+  margin: 0;
+  color: var(--muted);
+}
+
+.hint {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.8rem;
+}

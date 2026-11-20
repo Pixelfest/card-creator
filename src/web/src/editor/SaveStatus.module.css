@@ -1,0 +1,17 @@
+.status {
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+
+.saved {
+  color: #2e7d32;
+}
+
+.saving {
+  color: var(--muted);
+}
+
+.retrying,
+.conflict {
+  color: #b26a00;
+}

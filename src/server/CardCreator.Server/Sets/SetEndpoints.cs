@@ -1,3 +1,4 @@
+using CardCreator.Server.Cards;
 using CardCreator.Server.Collections;
 using CardCreator.Server.Data;
 using CardCreator.Server.Ids;
@@ -15,9 +16,8 @@ public record SetDto(
     DateTimeOffset UpdatedAt
 )
 {
-    // Cards arrive with #20; until then every Set is empty.
-    public static SetDto From(Set set) =>
-        new(set.Id, set.CollectionId, set.Name, set.CardFormat, 0, set.CreatedAt, set.UpdatedAt);
+    public static SetDto From(Set set, int cardCount) =>
+        new(set.Id, set.CollectionId, set.Name, set.CardFormat, cardCount, set.CreatedAt, set.UpdatedAt);
 }
 
 public record RenameSetRequest(string? Name);
@@ -56,8 +56,9 @@ public static class SetEndpoints
         var sets = await db
             .Sets.Where(s => s.CollectionId == collectionId)
             .OrderBy(s => s.CreatedAt)
+            .Select(s => new { Set = s, CardCount = db.Cards.Count(c => c.SetId == s.Id) })
             .ToListAsync(ct);
-        return Results.Ok(sets.Select(SetDto.From));
+        return Results.Ok(sets.Select(s => SetDto.From(s.Set, s.CardCount)));
     }
 
     private static async Task<IResult> CreateAsync(
@@ -83,7 +84,7 @@ public static class SetEndpoints
         };
         db.Sets.Add(set);
         await db.SaveChangesAsync(ct);
-        return Created(set);
+        return Created(set, cardCount: 0);
     }
 
     private static async Task<IResult> GetAsync(
@@ -94,7 +95,7 @@ public static class SetEndpoints
     )
     {
         var set = await FindAsync(db, collectionId, setId, ct);
-        return set is null ? NotFound() : Results.Ok(SetDto.From(set));
+        return set is null ? NotFound() : Results.Ok(await ToDtoAsync(db, set, ct));
     }
 
     private static async Task<IResult> RenameAsync(
@@ -120,10 +121,10 @@ public static class SetEndpoints
         set.Name = name;
         set.UpdatedAt = DateTimeOffset.UtcNow;
         await db.SaveChangesAsync(ct);
-        return Results.Ok(SetDto.From(set));
+        return Results.Ok(await ToDtoAsync(db, set, ct));
     }
 
-    /// <summary>Copies the Set. Its Cards are copied too once Cards exist (#20).</summary>
+    /// <summary>Copies the Set and its Cards. The copies share Artwork files.</summary>
     private static async Task<IResult> DuplicateAsync(
         string collectionId,
         string setId,
@@ -148,8 +149,9 @@ public static class SetEndpoints
             UpdatedAt = now,
         };
         db.Sets.Add(copy);
+        await CardEndpoints.CopyCardsAsync(db, original.Id, copy.Id, ct);
         await db.SaveChangesAsync(ct);
-        return Created(copy);
+        return Created(copy, await db.Cards.CountAsync(c => c.SetId == copy.Id, ct));
     }
 
     private static async Task<IResult> DeleteAsync(
@@ -170,7 +172,7 @@ public static class SetEndpoints
         return Results.NoContent();
     }
 
-    private static async Task<Set?> FindAsync(
+    internal static async Task<Set?> FindAsync(
         AppDbContext db,
         string collectionId,
         string setId,
@@ -183,8 +185,14 @@ public static class SetEndpoints
             )
             : null;
 
-    private static IResult Created(Set set) =>
-        Results.Created($"/api/collections/{set.CollectionId}/sets/{set.Id}", SetDto.From(set));
+    private static IResult Created(Set set, int cardCount) =>
+        Results.Created(
+            $"/api/collections/{set.CollectionId}/sets/{set.Id}",
+            SetDto.From(set, cardCount)
+        );
+
+    private static async Task<SetDto> ToDtoAsync(AppDbContext db, Set set, CancellationToken ct) =>
+        SetDto.From(set, await db.Cards.CountAsync(c => c.SetId == set.Id, ct));
 
     private static IResult NotFound() => Problems.NotFound("Set");
 }
