@@ -182,4 +182,32 @@ describe('the save queue', () => {
     expect(api.calls).toContain('save B1')
     release()
   })
+
+  it('undoing a delete saves the Card again under its own id, at its place', async () => {
+    const { api, cards, state, idle } = setup(['A', 'B', 'C'])
+    state().commit(actions.remove(cards[1].id))
+    await idle()
+    expect(api.names()).toEqual(['A', 'C'])
+
+    state().undo()
+    await idle()
+
+    expect(api.cards.map((c) => c.id)).toEqual(cards.map((c) => c.id))
+    expect(state().selectedId).toBe(cards[1].id)
+  })
+
+  it('undo and redo save the restored state like any other change', async () => {
+    const { api, cards, state, idle } = setup(['A'])
+    state().commit(actions.update(cards[0].id, { name: 'A2' }))
+    await idle()
+
+    state().undo()
+    await idle()
+    expect(api.names()).toEqual(['A'])
+
+    state().redo()
+    await idle()
+    expect(api.names()).toEqual(['A2'])
+  })
 })
+

@@ -1,0 +1,8 @@
+.group {
+  display: flex;
+  gap: 0.35rem;
+}
+
+.group button {
+  white-space: nowrap;
+}
