@@ -1,12 +1,15 @@
+import type { ArtworkRef } from '../render/artwork'
+
 // The Card model as the editor holds it. `design` is stored by the server as opaque jsonb;
-// later slices add Artwork (#23) and Text snippets (#25) to it.
+// later slices add Text snippets (#25) to it.
 
 export type CardDesign = {
   /** Fill colour behind everything, e.g. "#ffffff". */
   fill: string
   /** Asset path of the Frame (e.g. "frames/44x72/gold-border.png"), or null. */
   frame: string | null
-  artwork: unknown
+  /** The uploaded Artwork and where it sits, or null. */
+  artwork: ArtworkRef | null
   snippets: Record<string, unknown>
 }
 
