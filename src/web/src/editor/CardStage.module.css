@@ -1,0 +1,18 @@
+.stage {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+}
+
+.card {
+  box-shadow: 0 6px 24px rgb(0 0 0 / 45%);
+  border-radius: 2px;
+  line-height: 0;
+}
+
+.hint {
+  color: #a0a0a8;
+}

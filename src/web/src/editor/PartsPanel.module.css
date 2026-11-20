@@ -1,0 +1,42 @@
+.panel {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
+  min-height: 100%;
+}
+
+.parts {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  flex: none;
+  width: 6.5rem;
+}
+
+.parts button {
+  text-align: left;
+  background: #3a3a40;
+  color: #eee;
+  border-color: #555;
+}
+
+.parts button:disabled {
+  opacity: 0.4;
+}
+
+.parts .active {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.warn {
+  color: #ffcf66;
+}
+
+.properties {
+  flex: 1;
+  min-width: 0;
+  padding: 0.75rem;
+  border-radius: 8px;
+  background: #f7f7f8;
+}

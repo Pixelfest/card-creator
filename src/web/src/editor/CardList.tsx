@@ -1,6 +1,7 @@
 import { useId, useState, type DragEvent, type KeyboardEvent } from 'react'
 import { useAssets } from '../assets/api'
 import { ConfirmDialog } from '../components/ConfirmDialog'
+import { cardWarnings } from '../render/warnings'
 import * as actions from './actions'
 import styles from './CardList.module.css'
 import { useEditor } from './editorHooks'
@@ -90,6 +91,11 @@ export function CardList() {
             >
               {card.name}
             </button>
+            {cardWarnings(card.design, assets.data).length > 0 && (
+              <span className={styles.warn} role="img" aria-label={`${card.name} has warnings`} title="This card has warnings">
+                ⚠
+              </span>
+            )}
             <span className={styles.copies} title="Copies" aria-label={`${card.copies} copies`}>
               ×{card.copies}
             </span>

@@ -233,6 +233,38 @@ describe('SetEditorPage', () => {
     expect(screen.getByRole('button', { name: 'Red dragon' })).toBeInTheDocument()
   })
 
+  it('picks a Frame from the tiles and saves it in the design', async () => {
+    const fetchMock = stubEditor({
+      [`PUT ${cardsUrl}/${dragon.id}`]: (init) => ({ body: { ...dragon, ...JSON.parse(String(init?.body)), version: 2 } }),
+    })
+    renderWithQuery(<SetEditorPage collectionId={collectionId} setId={setId} />)
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Frame' }))
+    const tiles = await screen.findByRole('radiogroup', { name: 'Frame' })
+    expect(within(tiles).getByRole('radio', { name: 'Gold border' })).toHaveAttribute('aria-checked', 'true')
+
+    fireEvent.click(within(tiles).getByRole('radio', { name: 'None' }))
+
+    await waitFor(() => expect(calls(fetchMock, 'PUT')).toHaveLength(1))
+    expect(JSON.parse(String(calls(fetchMock, 'PUT')[0][1]?.body)).design).toMatchObject({ frame: null })
+    expect(within(tiles).getByRole('radio', { name: 'None' })).toHaveAttribute('aria-checked', 'true')
+  })
+
+  it('flags a card whose Frame is missing, in the list and on the Frame control', async () => {
+    const lost = serverCard('cardccccccccccccccccc', 'Lost', 0)
+    stubApi({
+      [`GET /api/collections/${collectionId}`]: { body: collection },
+      [`GET ${setUrl}`]: { body: set },
+      [`GET ${cardsUrl}`]: { body: [{ ...lost, design: { ...design, frame: 'frames/44x72/deleted.png' } }] },
+      'GET /api/assets': { body: assets },
+    })
+    renderWithQuery(<SetEditorPage collectionId={collectionId} setId={setId} />)
+
+    expect(await screen.findByRole('img', { name: 'Lost has warnings' })).toHaveTextContent('⚠')
+    fireEvent.click(screen.getByRole('button', { name: /^Frame/ }))
+    expect(await screen.findByRole('note')).toHaveTextContent('The Frame “deleted.png” is missing.')
+  })
+
   it('shows not found for a Set that is not in this Collection', async () => {
     stubApi({
       [`GET /api/collections/${collectionId}`]: { body: collection },
