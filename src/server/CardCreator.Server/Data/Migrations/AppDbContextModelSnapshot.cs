@@ -23,6 +23,56 @@ namespace CardCreator.Server.Data.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("CardCreator.Server.Cards.Card", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasMaxLength(22)
+                        .HasColumnType("character varying(22)")
+                        .HasColumnName("id");
+
+                    b.Property<int>("Copies")
+                        .HasColumnType("integer")
+                        .HasColumnName("copies");
+
+                    b.Property<string>("Design")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("design");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("name");
+
+                    b.Property<int>("Position")
+                        .HasColumnType("integer")
+                        .HasColumnName("position");
+
+                    b.Property<string>("SetId")
+                        .IsRequired()
+                        .HasMaxLength(22)
+                        .HasColumnType("character varying(22)")
+                        .HasColumnName("set_id");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<int>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("integer")
+                        .HasColumnName("version");
+
+                    b.HasKey("Id")
+                        .HasName("pk_cards");
+
+                    b.HasIndex("SetId", "Position")
+                        .HasDatabaseName("ix_cards_set_id_position");
+
+                    b.ToTable("cards");
+                });
+
             modelBuilder.Entity("CardCreator.Server.Collections.Collection", b =>
                 {
                     b.Property<string>("Id")
@@ -90,6 +140,16 @@ namespace CardCreator.Server.Data.Migrations
                         .HasDatabaseName("ix_sets_collection_id");
 
                     b.ToTable("sets");
+                });
+
+            modelBuilder.Entity("CardCreator.Server.Cards.Card", b =>
+                {
+                    b.HasOne("CardCreator.Server.Sets.Set", null)
+                        .WithMany()
+                        .HasForeignKey("SetId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_cards_sets_set_id");
                 });
 
             modelBuilder.Entity("CardCreator.Server.Sets.Set", b =>
