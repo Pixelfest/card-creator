@@ -24,6 +24,9 @@ public sealed class AppFactory : WebApplicationFactory<Program>, IAsyncLifetime
 
     public string ConnectionString => _postgres.GetConnectionString();
 
+    /// <summary>A throwaway folder standing in for the artwork volume.</summary>
+    public string ArtworkRoot { get; } = Directory.CreateTempSubdirectory("artwork-").FullName;
+
     /// <summary>The repository's assets folder, found by walking up from the test binaries.</summary>
     public static string RepositoryAssets { get; } = FindRepositoryAssets();
 
@@ -52,6 +55,7 @@ public sealed class AppFactory : WebApplicationFactory<Program>, IAsyncLifetime
         builder.UseSetting("ConnectionStrings:Default", _postgres.GetConnectionString());
         builder.UseSetting("CollectionCreation:AllowedIps:0", AllowlistedClient.ToString());
         builder.UseSetting("Assets:Path", RepositoryAssets);
+        builder.UseSetting("Artwork:Path", ArtworkRoot);
         builder.ConfigureServices(services =>
             services.AddSingleton<IStartupFilter>(new PeerAddressFilter(this))
         );

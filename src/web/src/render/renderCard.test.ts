@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { CardDesign } from '../editor/model'
-import { renderCard, SNIPPET_DRAW_ORDER, type ImageSource, type RenderContext } from './renderCard'
+import { coverPlacement } from './artwork'
+import { artworkKey, renderCard, SNIPPET_DRAW_ORDER, type ImageSource, type RenderContext } from './renderCard'
 import { previewTarget } from './units'
 
 /** Records what the renderer asks the canvas to do. */
@@ -57,6 +58,22 @@ describe('renderCard', () => {
     renderCard(ctx, design, { images: new Map() }, previewTarget(260, 1))
 
     expect(calls.some((c) => c.startsWith('drawImage'))).toBe(false)
+  })
+
+  it('draws the Artwork between the fill and the Frame, placed to cover', () => {
+    const { ctx, calls } = recorder()
+    const art = { width: 2000, height: 1000, toString: () => 'artImage' } as unknown as ImageSource
+    const withArtwork = { ...design, artwork: coverPlacement({ id: 'art1', width: 2000, height: 1000 }) }
+
+    renderCard(
+      ctx,
+      withArtwork,
+      { images: new Map([[artworkKey('art1'), art], ['frames/44x72/gold.png', frame]]) },
+      previewTarget(260, 2),
+    )
+
+    const drawing = calls.filter((c) => c.startsWith('fillRect') || c.startsWith('drawImage'))
+    expect(drawing).toEqual(['fillRect(0,0,520,850)', 'drawImage(artImage,-590,0,1700,850)', 'drawImage(frameImage,0,0,520,850)'])
   })
 
   it('draws the snippet slots bottom to top: textbox, banner, header', () => {

@@ -1,3 +1,4 @@
+using CardCreator.Server.Artwork;
 using CardCreator.Server.Cards;
 using CardCreator.Server.Collections;
 using CardCreator.Server.Ids;
@@ -11,6 +12,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<Collection> Collections => Set<Collection>();
     public DbSet<Set> Sets => Set<Set>();
     public DbSet<Card> Cards => Set<Card>();
+    public DbSet<ArtworkFile> ArtworkFiles => Set<ArtworkFile>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -49,6 +51,20 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
                 .HasForeignKey(c => c.SetId)
                 .OnDelete(DeleteBehavior.Cascade);
             card.HasIndex(c => new { c.SetId, c.Position });
+        });
+
+        modelBuilder.Entity<ArtworkFile>(artwork =>
+        {
+            artwork.HasKey(a => a.Id);
+            artwork.Property(a => a.Id).HasMaxLength(Base62Id.Length);
+            artwork.Property(a => a.CollectionId).HasMaxLength(Base62Id.Length);
+            artwork.Property(a => a.Path).HasMaxLength(64);
+            artwork.Property(a => a.ContentType).HasMaxLength(32);
+            artwork.HasOne<Collection>()
+                .WithMany()
+                .HasForeignKey(a => a.CollectionId)
+                .OnDelete(DeleteBehavior.Cascade);
+            artwork.HasIndex(a => a.CollectionId);
         });
 
         modelBuilder.ApplySnakeCaseNames();

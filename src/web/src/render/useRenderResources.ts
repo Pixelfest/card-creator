@@ -2,9 +2,9 @@ import { useEffect, useMemo, useState } from 'react'
 import { useAssets } from '../assets/api'
 import type { CardDesign } from '../editor/model'
 import { loadImage } from './images'
-import type { ImageSource, RenderResources } from './renderCard'
+import { artworkKey, type ImageSource, type RenderResources } from './renderCard'
 
-/** Asset paths a design draws as images. Later slices add Artwork and Snippet backgrounds. */
+/** Library asset paths a design draws as images. #26 adds Snippet backgrounds. */
 export function imagePaths(design: CardDesign): string[] {
   return design.frame ? [design.frame] : []
 }
@@ -13,15 +13,21 @@ export function imagePaths(design: CardDesign): string[] {
  * Loads the images a design needs and returns them by asset path. Paths the library does not
  * have are left out: the renderer skips them and the Card shows a warning.
  */
-export function useRenderResources(design: CardDesign): RenderResources {
+export function useRenderResources(design: CardDesign, artworkUrl: (id: string) => string): RenderResources {
   const manifest = useAssets().data
   const [images, setImages] = useState<ReadonlyMap<string, ImageSource>>(new Map())
 
   const wanted = useMemo(() => {
-    if (!manifest) return []
+    const result: (readonly [string, string])[] = []
+    if (design.artwork) result.push([artworkKey(design.artwork.id), artworkUrl(design.artwork.id)])
+    if (!manifest) return result
     const urls = new Map(manifest.frames.map((f) => [f.path, f.url]))
-    return imagePaths(design).flatMap((path) => (urls.has(path) ? [[path, urls.get(path)!] as const] : []))
-  }, [design, manifest])
+    for (const path of imagePaths(design)) {
+      const url = urls.get(path)
+      if (url) result.push([path, url])
+    }
+    return result
+  }, [design, manifest, artworkUrl])
 
   useEffect(() => {
     let cancelled = false

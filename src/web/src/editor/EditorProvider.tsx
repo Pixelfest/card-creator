@@ -19,7 +19,7 @@ export function EditorProvider({
   initial: ServerCard[]
   children: ReactNode
 }) {
-  const [editor] = useState(() => createEditor({ api: httpCardsApi(collectionId, setId), initial }))
+  const [editor] = useState(() => createEditor({ collectionId, setId, api: httpCardsApi(collectionId, setId), initial }))
 
   useEffect(() => {
     const { saver } = editor

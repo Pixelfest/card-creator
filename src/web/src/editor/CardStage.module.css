@@ -8,6 +8,8 @@
 }
 
 .card {
+  touch-action: none;
+  user-select: none;
   box-shadow: 0 6px 24px rgb(0 0 0 / 45%);
   border-radius: 2px;
   line-height: 0;
@@ -15,4 +17,12 @@
 
 .hint {
   color: #a0a0a8;
+}
+
+.movable {
+  cursor: grab;
+}
+
+.movable:active {
+  cursor: grabbing;
 }
