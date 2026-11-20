@@ -19,7 +19,10 @@ const set = {
 }
 const assets = {
   frames: [{ path: 'frames/44x72/gold-border.png', displayName: 'Gold border', url: '/assets/x/gold.png', aspectRatio: 0.61 }],
-  fonts: [],
+  fonts: [
+    { path: 'fonts/Cinzel-Bold.woff2', displayName: 'Cinzel Bold', url: '/assets/c1/fonts/Cinzel-Bold.woff2', aspectRatio: null },
+    { path: 'fonts/Lato-Regular.woff2', displayName: 'Lato Regular', url: '/assets/l1/fonts/Lato-Regular.woff2', aspectRatio: null },
+  ],
   snippetBackgrounds: [],
   emoji: null,
 }
@@ -336,6 +339,92 @@ describe('SetEditorPage', () => {
     expect(screen.getByRole('button', { name: 'Upload image…' })).toBeDisabled()
     expect(screen.getByText(/You're offline/)).toBeInTheDocument()
     online.mockRestore()
+  })
+
+  it('"+ Header" adds a header with the slot defaults and the first font', async () => {
+    const fetchMock = stubEditor({
+      [`PUT ${cardsUrl}/${dragon.id}`]: (init) => ({ body: { ...dragon, ...JSON.parse(String(init?.body)), version: 2 } }),
+    })
+    renderWithQuery(<SetEditorPage collectionId={collectionId} setId={setId} />)
+    await screen.findByRole('radiogroup', { name: 'Font' }).catch(() => null)
+
+    fireEvent.click(await screen.findByRole('button', { name: '+ Header' }))
+
+    await waitFor(() => expect(calls(fetchMock, 'PUT')).toHaveLength(1))
+    expect(JSON.parse(String(calls(fetchMock, 'PUT')[0][1]?.body)).design.snippets.header).toEqual({
+      text: 'Header',
+      font: 'fonts/Cinzel-Bold.woff2',
+      size: 12,
+      position: 6,
+      zoom: 80,
+      color: '#1a1a1a',
+      outline: false,
+      outlineColor: '#ffffff',
+      align: 'center',
+      background: null,
+    })
+    expect(screen.getByRole('button', { name: 'Header' })).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByRole('textbox', { name: 'Text' })).toHaveValue('Header')
+  })
+
+  it('edits a snippet: text on blur, font, alignment and outline, then removes it', async () => {
+    const withHeader = {
+      ...dragon,
+      design: { ...design, snippets: { header: { text: 'Old', font: 'fonts/Cinzel-Bold.woff2', size: 12, position: 6, zoom: 80, color: '#000000', outline: false, outlineColor: '#ffffff', align: 'center', background: null } } },
+    }
+    let version = 1
+    const fetchMock = stubApi({
+      [`GET /api/collections/${collectionId}`]: { body: collection },
+      [`GET ${setUrl}`]: { body: set },
+      [`GET ${cardsUrl}`]: { body: [withHeader] },
+      'GET /api/assets': { body: assets },
+      [`PUT ${cardsUrl}/${dragon.id}`]: (init) => ({ body: { ...withHeader, ...JSON.parse(String(init?.body)), version: ++version } }),
+    })
+    renderWithQuery(<SetEditorPage collectionId={collectionId} setId={setId} />)
+    fireEvent.click(await screen.findByRole('button', { name: 'Header' }))
+    const lastHeader = () => JSON.parse(String(calls(fetchMock, 'PUT').at(-1)![1]?.body)).design.snippets.header
+
+    const textArea = screen.getByRole('textbox', { name: 'Text' })
+    fireEvent.change(textArea, { target: { value: 'Fire dragon 🔥' } })
+    expect(calls(fetchMock, 'PUT')).toHaveLength(0) // not until the field is left
+    fireEvent.blur(textArea)
+    await waitFor(() => expect(calls(fetchMock, 'PUT')).toHaveLength(1))
+    expect(lastHeader().text).toBe('Fire dragon 🔥')
+
+    fireEvent.click(within(screen.getByRole('radiogroup', { name: 'Font' })).getByRole('radio', { name: 'Lato Regular' }))
+    await waitFor(() => expect(calls(fetchMock, 'PUT')).toHaveLength(2))
+    expect(lastHeader().font).toBe('fonts/Lato-Regular.woff2')
+
+    fireEvent.click(screen.getByRole('radio', { name: 'Align left' }))
+    await waitFor(() => expect(calls(fetchMock, 'PUT')).toHaveLength(3))
+    expect(lastHeader().align).toBe('left')
+
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Outline' }))
+    await waitFor(() => expect(calls(fetchMock, 'PUT')).toHaveLength(4))
+    expect(lastHeader().outline).toBe(true)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Remove header' }))
+    await waitFor(() => expect(calls(fetchMock, 'PUT')).toHaveLength(5))
+    expect(lastHeader()).toBeUndefined()
+    expect(screen.getByRole('button', { name: '+ Header' })).toBeInTheDocument()
+  })
+
+  it("shows a doesn't-fit warning on the snippet and in the card list", async () => {
+    const crowded = {
+      ...dragon,
+      design: { ...design, snippets: { textbox: { text: Array(300).fill('word').join(' '), font: 'fonts/Lato-Regular.woff2', size: 24, position: 80, zoom: 50, color: '#000000', outline: false, outlineColor: '#ffffff', align: 'center', background: null } } },
+    }
+    stubApi({
+      [`GET /api/collections/${collectionId}`]: { body: collection },
+      [`GET ${setUrl}`]: { body: set },
+      [`GET ${cardsUrl}`]: { body: [crowded] },
+      'GET /api/assets': { body: assets },
+    })
+    renderWithQuery(<SetEditorPage collectionId={collectionId} setId={setId} />)
+
+    expect(await screen.findByRole('img', { name: 'Dragon has warnings' })).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: /^Textbox/ }))
+    expect(await screen.findByRole('note')).toHaveTextContent("The textbox text doesn't fit.")
   })
 
   it('shows not found for a Set that is not in this Collection', async () => {

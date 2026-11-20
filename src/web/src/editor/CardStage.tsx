@@ -2,12 +2,16 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, typ
 import { artworkUrl } from '../artwork/api'
 import { pan, toCardUnits, wheelFactor, zoomAt, type ArtworkRef } from '../render/artwork'
 import { CardCanvas } from '../render/CardCanvas'
-import { fitCard } from '../render/units'
+import { CARD_HEIGHT, fitCard } from '../render/units'
 import { useRenderResources } from '../render/useRenderResources'
+import { hitsBox } from '../text/layout'
+import type { TextResources } from '../text/textResources'
+import { useTextResources } from '../text/useTextResources'
 import * as actions from './actions'
 import styles from './CardStage.module.css'
 import { useEditor, useEditorApi } from './editorHooks'
-import type { Card, CardDesign } from './model'
+import type { Card, CardDesign, Snippet, SnippetSlot } from './model'
+import { MAX_SNIPPET_ZOOM, MIN_SNIPPET_ZOOM, SNIPPET_DRAW_ORDER } from './snippets'
 
 /** How long the wheel must rest before a zoom counts as finished (and is saved). */
 const WHEEL_SETTLE_MS = 350
@@ -51,25 +55,66 @@ export function CardStage() {
   )
 }
 
+/** The topmost snippet whose box contains a point (card units): header, then banner, then textbox. */
+function snippetAt(design: CardDesign, text: TextResources, x: number, y: number): SnippetSlot | null {
+  for (const slot of [...SNIPPET_DRAW_ORDER].reverse()) {
+    const snippet = design.snippets[slot]
+    if (snippet && hitsBox(text.layout(snippet), x, y)) return slot
+  }
+  return null
+}
+
+type DragTarget =
+  | { kind: 'artwork'; from: ArtworkRef }
+  | { kind: 'snippet'; slot: SnippetSlot; from: Snippet }
+  | { kind: 'none' }
+
+type Drag = { pointerId: number; startX: number; startY: number; moved: boolean; target: DragTarget }
+
+type PendingWheel = {
+  save: () => void
+  timer: number
+  artwork?: ArtworkRef
+  snippet?: { slot: SnippetSlot; value: Snippet }
+}
+
 /**
- * The canvas plus direct manipulation: drag pans the Artwork, the wheel zooms the part under
- * the pointer, and a click selects the part. Moves are previewed live and saved when
- * finished: on release for a drag, once the wheel rests for a zoom.
+ * The canvas plus direct manipulation. A press on a snippet drags it up or down; elsewhere it
+ * pans the Artwork. The wheel zooms the snippet under the pointer, or the Artwork around the
+ * pointer. A click selects that part. Everything is previewed live and saved when finished:
+ * on release for a drag, once the wheel rests for a zoom. Nothing is drawn until the fonts
+ * have loaded, so the fallback font never flashes or gets measured.
  */
 function StageCanvas({ card, design, cssWidth }: { card: Card; design: CardDesign; cssWidth: number }) {
   const { collectionId } = useEditorApi()
   const urlFor = useCallback((id: string) => artworkUrl(collectionId, id), [collectionId])
-  const resources = useRenderResources(design, urlFor)
+  const images = useRenderResources(design, urlFor)
+  const text = useTextResources()
+  const resources = useMemo(() => ({ ...images, text }), [images, text])
   const commit = useEditor((s) => s.commit)
   const setPreview = useEditor((s) => s.setPreview)
   const selectPart = useEditor((s) => s.selectPart)
   const surface = useRef<HTMLDivElement>(null)
-  const drag = useRef<{ pointerId: number; startX: number; startY: number; from: ArtworkRef | null; moved: boolean } | null>(null)
-  const wheel = useRef<{ artwork: ArtworkRef; timer: number } | null>(null)
+  const drag = useRef<Drag | null>(null)
+  const wheel = useRef<PendingWheel | null>(null)
 
   const artwork = design.artwork
-  const show = useCallback((next: ArtworkRef) => setPreview({ cardId: card.id, design: { artwork: next } }), [card.id, setPreview])
-  const save = useCallback((next: ArtworkRef) => commit(actions.updateDesign(card.id, { artwork: next })), [card.id, commit])
+  const cardId = card.id
+  const showArtwork = useCallback((next: ArtworkRef) => setPreview({ cardId, design: { artwork: next } }), [cardId, setPreview])
+  const saveArtwork = useCallback((next: ArtworkRef) => commit(actions.updateDesign(cardId, { artwork: next })), [cardId, commit])
+  const showSnippet = useCallback(
+    (slot: SnippetSlot, next: Snippet) => setPreview({ cardId, design: { snippets: { ...card.design.snippets, [slot]: next } } }),
+    [cardId, card.design.snippets, setPreview],
+  )
+  const saveSnippet = useCallback(
+    (slot: SnippetSlot, next: Snippet) => commit(actions.patchSnippet(cardId, slot, { position: next.position, zoom: next.zoom })),
+    [cardId, commit],
+  )
+
+  function pointInCard(clientX: number, clientY: number) {
+    const box = surface.current!.getBoundingClientRect()
+    return toCardUnits({ x: clientX - box.left, y: clientY - box.top }, cssWidth)
+  }
 
   function onPointerDown(event: PointerEvent<HTMLDivElement>) {
     if (event.button !== 0) return
@@ -79,30 +124,48 @@ function StageCanvas({ card, design, cssWidth }: { card: Card; design: CardDesig
     } catch {
       // Not an active pointer (synthetic events): the drag still works inside the card.
     }
-    drag.current = { pointerId: event.pointerId, startX: event.clientX, startY: event.clientY, from: artwork, moved: false }
+    const at = pointInCard(event.clientX, event.clientY)
+    const slot = text ? snippetAt(design, text, at.x, at.y) : null
+    const target: DragTarget = slot
+      ? { kind: 'snippet', slot, from: design.snippets[slot]! }
+      : artwork
+        ? { kind: 'artwork', from: artwork }
+        : { kind: 'none' }
+    drag.current = { pointerId: event.pointerId, startX: event.clientX, startY: event.clientY, moved: false, target }
+  }
+
+  /** Where a drag has taken its target. A snippet only moves vertically. */
+  function dragged(d: Drag, clientX: number, clientY: number): { artwork?: ArtworkRef; snippet?: Snippet } {
+    const delta = toCardUnits({ x: clientX - d.startX, y: clientY - d.startY }, cssWidth)
+    if (d.target.kind === 'artwork') return { artwork: pan(d.target.from, delta.x, delta.y) }
+    if (d.target.kind === 'snippet') {
+      const position = Math.min(100, Math.max(0, d.target.from.position + (delta.y / CARD_HEIGHT) * 100))
+      return { snippet: { ...d.target.from, position } }
+    }
+    return {}
   }
 
   function onPointerMove(event: PointerEvent<HTMLDivElement>) {
     const d = drag.current
-    if (!d || d.pointerId !== event.pointerId || !d.from) return
-    const dx = event.clientX - d.startX
-    const dy = event.clientY - d.startY
-    if (!d.moved && Math.hypot(dx, dy) < CLICK_SLOP) return
+    if (!d || d.pointerId !== event.pointerId || d.target.kind === 'none') return
+    if (!d.moved && Math.hypot(event.clientX - d.startX, event.clientY - d.startY) < CLICK_SLOP) return
     d.moved = true
-    const delta = toCardUnits({ x: dx, y: dy }, cssWidth)
-    show(pan(d.from, delta.x, delta.y))
+    const next = dragged(d, event.clientX, event.clientY)
+    if (next.artwork) showArtwork(next.artwork)
+    if (next.snippet && d.target.kind === 'snippet') showSnippet(d.target.slot, next.snippet)
   }
 
   function onPointerUp(event: PointerEvent<HTMLDivElement>) {
     const d = drag.current
     if (!d || d.pointerId !== event.pointerId) return
     drag.current = null
-    if (d.moved && d.from) {
-      const delta = toCardUnits({ x: event.clientX - d.startX, y: event.clientY - d.startY }, cssWidth)
-      save(pan(d.from, delta.x, delta.y))
+    if (d.moved) {
+      const next = dragged(d, event.clientX, event.clientY)
+      if (next.artwork) saveArtwork(next.artwork)
+      if (next.snippet && d.target.kind === 'snippet') saveSnippet(d.target.slot, next.snippet)
     } else {
-      // A click: select the part under the pointer. Snippets (#25) are hit-tested first.
-      selectPart(artwork ? 'artwork' : 'card')
+      // A click selects the part under the pointer.
+      selectPart(d.target.kind === 'snippet' ? d.target.slot : artwork ? 'artwork' : 'card')
     }
   }
 
@@ -111,42 +174,60 @@ function StageCanvas({ card, design, cssWidth }: { card: Card; design: CardDesig
     const element = surface.current
     if (!element) return
     const onWheel = (event: WheelEvent) => {
-      const current = wheel.current?.artwork ?? artwork
-      if (!current) return
-      event.preventDefault()
       const box = element.getBoundingClientRect()
       const at = toCardUnits({ x: event.clientX - box.left, y: event.clientY - box.top }, cssWidth)
-      const next = zoomAt(current, wheelFactor(event.deltaY), at)
-      show(next)
-      if (wheel.current) window.clearTimeout(wheel.current.timer)
+      const pending = wheel.current
+      // Keep zooming whatever the current wheel gesture started on.
+      const slot = pending ? (pending.snippet?.slot ?? null) : text ? snippetAt(design, text, at.x, at.y) : null
+      const factor = wheelFactor(event.deltaY)
+
+      let next: Omit<PendingWheel, 'timer'>
+      if (slot) {
+        const current = pending?.snippet?.value ?? design.snippets[slot]!
+        const zoom = Math.min(MAX_SNIPPET_ZOOM, Math.max(MIN_SNIPPET_ZOOM, current.zoom * factor))
+        const value = { ...current, zoom }
+        showSnippet(slot, value)
+        next = { snippet: { slot, value }, save: () => saveSnippet(slot, value) }
+      } else {
+        const current = pending?.artwork ?? artwork
+        if (!current) return
+        const value = zoomAt(current, factor, at)
+        showArtwork(value)
+        next = { artwork: value, save: () => saveArtwork(value) }
+      }
+      event.preventDefault()
+      if (pending) window.clearTimeout(pending.timer)
       wheel.current = {
-        artwork: next,
+        ...next,
         timer: window.setTimeout(() => {
           wheel.current = null
-          save(next)
+          next.save()
         }, WHEEL_SETTLE_MS),
       }
     }
     element.addEventListener('wheel', onWheel, { passive: false })
     return () => element.removeEventListener('wheel', onWheel)
-  }, [artwork, cssWidth, show, save])
+  }, [artwork, design, text, cssWidth, showArtwork, saveArtwork, showSnippet, saveSnippet])
 
   // Switching Card mid-zoom still saves the zoom on the Card it belongs to.
   useEffect(
     () => () => {
       if (wheel.current) {
         window.clearTimeout(wheel.current.timer)
-        commit(actions.updateDesign(card.id, { artwork: wheel.current.artwork }))
+        wheel.current.save()
         wheel.current = null
       }
     },
-    [card.id, commit],
+    [cardId],
   )
 
+  if (!text) return <p className={styles.hint}>Loading fonts…</p>
+
+  const movable = !!artwork || Object.keys(design.snippets).length > 0
   return (
     <div
       ref={surface}
-      className={`${styles.card} ${artwork ? styles.movable : ''}`}
+      className={`${styles.card} ${movable ? styles.movable : ''}`}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
