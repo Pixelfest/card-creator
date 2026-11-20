@@ -22,6 +22,8 @@ WORKDIR /app
 RUN mkdir -p /data/artwork && chown "$APP_UID" /data/artwork
 COPY --from=server /app ./
 COPY --from=web /web/dist ./wwwroot
+# The asset library (Frames, fonts, Snippet backgrounds, emoji), scanned at startup.
+COPY assets/ ./assets/
 USER $APP_UID
 EXPOSE 8080
 ENTRYPOINT ["dotnet", "CardCreator.Server.dll"]
