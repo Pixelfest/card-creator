@@ -9,7 +9,7 @@ const collectionKey = (collectionId: string) => ['collection', collectionId] as 
 export function useCollectionCreation() {
   return useQuery({
     queryKey: ['collection-creation'],
-    queryFn: () => fetchJson<{ allowed: boolean }>('/api/collection-creation'),
+    queryFn: () => fetchJson<{ allowed: boolean; clientIp: string | null }>('/api/collection-creation'),
   })
 }
 

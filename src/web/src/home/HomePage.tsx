@@ -47,6 +47,12 @@ export function HomePage() {
       {creation.data && !creation.data.allowed && (
         <p className={styles.note}>
           Creating collections is restricted. Ask the owner for a collection link.
+          {creation.data.clientIp && (
+            <>
+              {' '}
+              Your IP address is <code>{creation.data.clientIp}</code>.
+            </>
+          )}
         </p>
       )}
 

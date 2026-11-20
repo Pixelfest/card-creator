@@ -75,6 +75,20 @@ public class CollectionTests(AppFactory factory)
         Assert.False(refused!.Allowed);
     }
 
+    [Fact]
+    public async Task The_UI_is_told_the_client_ip_the_server_sees()
+    {
+        var viaNginx = await factory
+            .ClientFrom(AppFactory.DockerGateway, OtherClient.ToString())
+            .GetFromJsonAsync<CollectionCreationDto>("/api/collection-creation");
+        var mapped = await factory
+            .ClientFrom(OtherClient.MapToIPv6())
+            .GetFromJsonAsync<CollectionCreationDto>("/api/collection-creation");
+
+        Assert.Equal(OtherClient.ToString(), viaNginx!.ClientIp);
+        Assert.Equal(OtherClient.ToString(), mapped!.ClientIp);
+    }
+
     // ---- Creating, reading, renaming ----
 
     [Fact]

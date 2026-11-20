@@ -17,12 +17,13 @@ describe('HomePage', () => {
     expect(screen.queryByText(/creating collections is restricted/i)).not.toBeInTheDocument()
   })
 
-  it('shows a note instead to everyone else', async () => {
-    stubApi({ 'GET /api/collection-creation': { body: { allowed: false } } })
+  it('shows a note with the client IP instead to everyone else', async () => {
+    stubApi({ 'GET /api/collection-creation': { body: { allowed: false, clientIp: '198.51.100.20' } } })
 
     renderWithQuery(<HomePage />)
 
     expect(await screen.findByText(/creating collections is restricted/i)).toBeInTheDocument()
+    expect(screen.getByText('198.51.100.20')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: '+ New collection' })).not.toBeInTheDocument()
   })
 

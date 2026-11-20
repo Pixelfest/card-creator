@@ -9,7 +9,7 @@ public record CollectionDto(string Id, string Name, DateTimeOffset CreatedAt)
         new(collection.Id, collection.Name, collection.CreatedAt);
 }
 
-public record CollectionCreationDto(bool Allowed);
+public record CollectionCreationDto(bool Allowed, string? ClientIp);
 
 public record RenameCollectionRequest(string? Name);
 
@@ -23,11 +23,15 @@ public static class CollectionEndpoints
     {
         var api = app.MapGroup("/api");
 
-        // Tells the home page whether to offer "New collection".
+        // Tells the home page whether to offer "New collection", and which IP the server sees
+        // so the owner knows what to add to the allowlist.
         api.MapGet(
             "/collection-creation",
             (HttpContext http, CollectionCreationPolicy policy) =>
-                new CollectionCreationDto(policy.IsAllowed(http.Connection.RemoteIpAddress))
+                new CollectionCreationDto(
+                    policy.IsAllowed(http.Connection.RemoteIpAddress),
+                    CollectionCreationPolicy.Describe(http.Connection.RemoteIpAddress)
+                )
         );
 
         api.MapPost("/collections", CreateAsync);
