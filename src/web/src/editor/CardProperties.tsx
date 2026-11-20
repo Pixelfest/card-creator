@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
+import { useState, type KeyboardEvent } from 'react'
+import { ColourField } from '../components/ColourField'
 import { NameInput } from '../components/NameInput'
 import * as actions from './actions'
 import styles from './CardProperties.module.css'
@@ -65,39 +66,20 @@ function CopiesInput({ card, onCommit }: { card: Card; onCommit: (copies: number
   )
 }
 
-/**
- * The fill colour behind everything. Shown live while the picker is open, saved (and one undo
- * step) when it closes: the native `change` event, which React's onChange does not expose.
- */
+/** The fill colour behind everything: live while the picker is open, saved when it closes. */
 export function FillColour({ card }: { card: Card }) {
-  const input = useRef<HTMLInputElement>(null)
   const commit = useEditor((s) => s.commit)
   const setPreview = useEditor((s) => s.setPreview)
-
-  useEffect(() => {
-    const element = input.current
-    if (!element) return
-    const onClose = () => {
-      commit(actions.updateDesign(card.id, { fill: element.value }))
-      setPreview(null)
-    }
-    element.addEventListener('change', onClose)
-    return () => element.removeEventListener('change', onClose)
-  }, [card.id, commit, setPreview])
-
   return (
-    <label className={styles.field}>
-      <span>Fill colour</span>
-      <span className={styles.colour}>
-        <input
-          ref={input}
-          type="color"
-          defaultValue={card.design.fill}
-          onInput={(event) => setPreview({ cardId: card.id, design: { fill: event.currentTarget.value } })}
-        />
-        <code>{card.design.fill}</code>
-      </span>
-      <small className={styles.hint}>Shows wherever the Artwork doesn't cover the card.</small>
-    </label>
+    <ColourField
+      label="Fill colour"
+      value={card.design.fill}
+      hint="Shows wherever the Artwork doesn't cover the card."
+      onPreview={(fill) => setPreview({ cardId: card.id, design: { fill } })}
+      onCommit={(fill) => {
+        commit(actions.updateDesign(card.id, { fill }))
+        setPreview(null)
+      }}
+    />
   )
 }
