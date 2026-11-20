@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import type { CardDesign } from '../editor/model'
+import { newSnippet } from '../editor/snippets'
+import type { Measurer } from '../text/layout'
+import { createTextResources } from '../text/textResources'
 import { coverPlacement } from './artwork'
 import { artworkKey, renderCard, SNIPPET_DRAW_ORDER, type ImageSource, type RenderContext } from './renderCard'
 import { previewTarget } from './units'
@@ -74,6 +77,32 @@ describe('renderCard', () => {
 
     const drawing = calls.filter((c) => c.startsWith('fillRect') || c.startsWith('drawImage'))
     expect(drawing).toEqual(['fillRect(0,0,520,850)', 'drawImage(artImage,-590,0,1700,850)', 'drawImage(frameImage,0,0,520,850)'])
+  })
+
+  it('draws snippets after the Frame, textbox → banner → header, outline stroked before the fill', () => {
+    const { ctx, calls } = recorder()
+    const measurer: Measurer = { width: (t, _f, size) => t.length * size * 0.5, metrics: () => ({ ascent: 0.8, descent: 0.2 }) }
+    const text = createTextResources({ families: new Map([['fonts/A.woff2', 'fam-a']]), failed: new Set() }, measurer, undefined)
+    const withText: CardDesign = {
+      ...design,
+      snippets: {
+        header: { ...newSnippet('header', 'fonts/A.woff2'), text: 'H', outline: true, outlineColor: '#fff', color: '#111' },
+        textbox: { ...newSnippet('textbox', 'fonts/A.woff2'), text: 'T' },
+      },
+    }
+
+    renderCard(ctx, withText, { images: new Map([['frames/44x72/gold.png', frame]]), text }, previewTarget(260, 2))
+
+    const ops = calls.filter((c) => /^(drawImage|strokeText|fillText|lineJoin|lineWidth|strokeStyle|font=)/.test(c))
+    expect(ops[0]).toBe('drawImage(frameImage,0,0,520,850)')
+    // The textbox (no outline) first, then the header: stroke, then fill.
+    expect(ops.findIndex((c) => c.startsWith('fillText(T'))).toBeLessThan(ops.findIndex((c) => c.startsWith('strokeText(H')))
+    expect(ops.findIndex((c) => c.startsWith('strokeText(H'))).toBeLessThan(ops.findIndex((c) => c.startsWith('fillText(H')))
+    expect(ops).toContain('lineJoin=round')
+    const headerSize = text.layout(withText.snippets.header!).fontSize
+    expect(ops).toContain(`lineWidth=${headerSize * 0.12 * 2}`)
+    expect(ops).toContain(`font=${headerSize}px "fam-a"`)
+    expect(calls.filter((c) => c.startsWith('strokeText(T'))).toHaveLength(0)
   })
 
   it('draws the snippet slots bottom to top: textbox, banner, header', () => {

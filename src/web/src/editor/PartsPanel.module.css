@@ -24,6 +24,12 @@
   opacity: 0.4;
 }
 
+.parts .empty {
+  background: transparent;
+  border-style: dashed;
+  color: #bbb;
+}
+
 .parts .active {
   background: var(--accent);
   border-color: var(--accent);

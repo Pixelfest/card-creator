@@ -1,4 +1,7 @@
-import type { CardDesign } from '../editor/model'
+import type { CardDesign, SnippetSlot } from '../editor/model'
+import { SNIPPET_DRAW_ORDER } from '../editor/snippets'
+import { fontString } from '../text/measure'
+import type { TextResources } from '../text/textResources'
 import { artworkRect } from './artwork'
 import { CARD_HEIGHT, CARD_WIDTH, type RenderTarget } from './units'
 
@@ -9,6 +12,8 @@ export type ImageSource = CanvasImageSource & { width: number; height: number }
 export type RenderResources = {
   /** Frame and Snippet background images by asset path; Artwork by `artworkKey(id)`. */
   images: ReadonlyMap<string, ImageSource>
+  /** Fonts and layout for Text snippets; snippets are skipped without it. */
+  text?: TextResources
 }
 
 /** The slice of CanvasRenderingContext2D the renderer uses; tests pass a recorder. */
@@ -27,6 +32,15 @@ export type RenderContext = Pick<
   | 'fillStyle'
   | 'imageSmoothingEnabled'
   | 'imageSmoothingQuality'
+  | 'font'
+  | 'textAlign'
+  | 'textBaseline'
+  | 'lineJoin'
+  | 'lineCap'
+  | 'lineWidth'
+  | 'strokeStyle'
+  | 'strokeText'
+  | 'fillText'
 >
 
 /**
@@ -54,8 +68,7 @@ export function renderCard(ctx: RenderContext, design: CardDesign, resources: Re
   ctx.restore()
 }
 
-/** Bottom to top: the header is drawn last, so it sits on top. */
-export const SNIPPET_DRAW_ORDER = ['textbox', 'banner', 'header'] as const
+export { SNIPPET_DRAW_ORDER }
 
 function drawFill(ctx: RenderContext, design: CardDesign) {
   ctx.fillStyle = design.fill
@@ -82,11 +95,29 @@ function drawFrame(ctx: RenderContext, design: CardDesign, resources: RenderReso
   if (image) ctx.drawImage(image, 0, 0, CARD_WIDTH, CARD_HEIGHT)
 }
 
-function drawSnippet(
-  _ctx: RenderContext,
-  _design: CardDesign,
-  _slot: (typeof SNIPPET_DRAW_ORDER)[number],
-  _resources: RenderResources,
-) {
-  // Text snippets arrive with #25: background first, then text.
+/**
+ * One Text snippet: its background (#26), then its text. The outline is strokeText first, at
+ * twice the outline width with round joins, then fillText on top, so the fill covers the
+ * stroke's inner half (research §3). No maxWidth: the layout already wrapped the lines.
+ */
+function drawSnippet(ctx: RenderContext, design: CardDesign, slot: SnippetSlot, resources: RenderResources) {
+  const snippet = design.snippets[slot]
+  const text = resources.text
+  if (!snippet || !text) return
+  const layout = text.layout(snippet)
+
+  ctx.save()
+  ctx.font = fontString(text.family(snippet.font), layout.fontSize)
+  ctx.textAlign = 'left'
+  ctx.textBaseline = 'alphabetic'
+  if (layout.outlineWidth > 0) {
+    ctx.lineJoin = 'round'
+    ctx.lineCap = 'round'
+    ctx.lineWidth = layout.outlineWidth * 2
+    ctx.strokeStyle = snippet.outlineColor
+    for (const line of layout.lines) ctx.strokeText(line.text, line.x, line.baseline)
+  }
+  ctx.fillStyle = snippet.color
+  for (const line of layout.lines) ctx.fillText(line.text, line.x, line.baseline)
+  ctx.restore()
 }

@@ -2,6 +2,7 @@ import { useId, useState, type DragEvent, type KeyboardEvent } from 'react'
 import { useAssets } from '../assets/api'
 import { ConfirmDialog } from '../components/ConfirmDialog'
 import { cardWarnings } from '../render/warnings'
+import { useTextResources } from '../text/useTextResources'
 import * as actions from './actions'
 import styles from './CardList.module.css'
 import { useEditor } from './editorHooks'
@@ -17,6 +18,7 @@ export function CardList() {
   const commit = useEditor((s) => s.commit)
   const select = useEditor((s) => s.select)
   const assets = useAssets()
+  const text = useTextResources()
   const [deleting, setDeleting] = useState<Card | null>(null)
   const [dragging, setDragging] = useState<string | null>(null)
   const [dropIndex, setDropIndex] = useState<number | null>(null)
@@ -91,7 +93,7 @@ export function CardList() {
             >
               {card.name}
             </button>
-            {cardWarnings(card.design, assets.data).length > 0 && (
+            {cardWarnings(card.design, assets.data, text).length > 0 && (
               <span className={styles.warn} role="img" aria-label={`${card.name} has warnings`} title="This card has warnings">
                 ⚠
               </span>
