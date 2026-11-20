@@ -44,6 +44,8 @@ export type EditorState = {
 }
 
 export type Editor = {
+  collectionId: string
+  setId: string
   store: StoreApi<EditorState>
   saver: Saver
   /** Called after every committed change. Returns an unsubscribe function. */
@@ -55,10 +57,14 @@ function stillThere(cards: Card[], id: string | null | undefined): string | null
 }
 
 export function createEditor({
+  collectionId = '',
+  setId = '',
   api,
   initial,
   sleep,
 }: {
+  collectionId?: string
+  setId?: string
   api: CardsApi
   initial: ServerCard[]
   sleep?: (ms: number) => Promise<void>
@@ -139,6 +145,8 @@ export function createEditor({
   })
 
   return {
+    collectionId,
+    setId,
     store,
     saver,
     onCommit: (listener) => {

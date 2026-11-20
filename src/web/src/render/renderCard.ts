@@ -1,4 +1,5 @@
 import type { CardDesign } from '../editor/model'
+import { artworkRect } from './artwork'
 import { CARD_HEIGHT, CARD_WIDTH, type RenderTarget } from './units'
 
 /** Decoded images by URL. Only same-origin URLs go in, so the canvas is never tainted. */
@@ -6,7 +7,7 @@ export type ImageSource = CanvasImageSource & { width: number; height: number }
 
 /** Everything a render needs that is not in the design itself. */
 export type RenderResources = {
-  /** Frame (and later Artwork, Snippet background) images, by asset path. */
+  /** Frame and Snippet background images by asset path; Artwork by `artworkKey(id)`. */
   images: ReadonlyMap<string, ImageSource>
 }
 
@@ -61,8 +62,18 @@ function drawFill(ctx: RenderContext, design: CardDesign) {
   ctx.fillRect(0, 0, CARD_WIDTH, CARD_HEIGHT)
 }
 
-function drawArtwork(_ctx: RenderContext, _design: CardDesign, _resources: RenderResources) {
-  // Artwork, cover and pan/zoom arrive with #23.
+/** Artwork images are keyed apart from asset paths. */
+export function artworkKey(id: string): string {
+  return `artwork:${id}`
+}
+
+function drawArtwork(ctx: RenderContext, design: CardDesign, resources: RenderResources) {
+  const artwork = design.artwork
+  const image = artwork ? resources.images.get(artworkKey(artwork.id)) : undefined
+  if (!artwork || !image) return
+  // Whatever the image does not cover keeps the fill colour (drawn first).
+  const r = artworkRect(artwork)
+  ctx.drawImage(image, r.x, r.y, r.width, r.height)
 }
 
 function drawFrame(ctx: RenderContext, design: CardDesign, resources: RenderResources) {

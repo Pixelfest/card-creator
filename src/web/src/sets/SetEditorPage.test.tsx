@@ -265,6 +265,79 @@ describe('SetEditorPage', () => {
     expect(await screen.findByRole('note')).toHaveTextContent('The Frame “deleted.png” is missing.')
   })
 
+  it('uploads Artwork, places it to cover and saves it in the design', async () => {
+    const uploaded = { id: 'artaaaaaaaaaaaaaaaaaaa', url: '/x', width: 2000, height: 1000, contentType: 'image/png' }
+    const fetchMock = stubEditor({
+      [`POST /api/collections/${collectionId}/artwork`]: { status: 201, body: uploaded },
+      [`PUT ${cardsUrl}/${dragon.id}`]: (init) => ({ body: { ...dragon, ...JSON.parse(String(init?.body)), version: 2 } }),
+    })
+    renderWithQuery(<SetEditorPage collectionId={collectionId} setId={setId} />)
+    fireEvent.click(await screen.findByRole('button', { name: 'Artwork' }))
+    const png = new File([new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0])], 'dragon.png', { type: 'image/png' })
+
+    fireEvent.change(screen.getByLabelText('Artwork file'), { target: { files: [png] } })
+
+    await waitFor(() => expect(calls(fetchMock, 'PUT')).toHaveLength(1))
+    const upload = calls(fetchMock, 'POST').find(([url]) => String(url).endsWith('/artwork'))!
+    expect(upload[1]?.body).toBeInstanceOf(FormData)
+    expect(JSON.parse(String(calls(fetchMock, 'PUT')[0][1]?.body)).design.artwork).toEqual({
+      id: uploaded.id,
+      width: 2000,
+      height: 1000,
+      zoom: 1,
+      x: 0,
+      y: 0,
+    })
+    expect(await screen.findByRole('button', { name: 'Reset to cover' })).toBeInTheDocument()
+    expect(screen.getAllByRole('slider').map((s) => (s as HTMLInputElement).value)).toEqual(['100', '0', '0'])
+  })
+
+  it('refuses a file that is not an image before uploading', async () => {
+    const fetchMock = stubEditor()
+    renderWithQuery(<SetEditorPage collectionId={collectionId} setId={setId} />)
+    fireEvent.click(await screen.findByRole('button', { name: 'Artwork' }))
+
+    fireEvent.change(screen.getByLabelText('Artwork file'), { target: { files: [new File(['hello'], 'notes.jpg')] } })
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Only JPG, PNG and WebP images can be used.')
+    expect(calls(fetchMock, 'POST')).toHaveLength(0)
+  })
+
+  it('a failed upload shows an inline error with Retry and leaves the card unchanged', async () => {
+    let attempts = 0
+    const uploaded = { id: 'artbbbbbbbbbbbbbbbbbbb', url: '/x', width: 100, height: 100, contentType: 'image/png' }
+    const fetchMock = stubEditor({
+      [`POST /api/collections/${collectionId}/artwork`]: () => (++attempts === 1 ? { status: 500, body: {} } : { status: 201, body: uploaded }),
+      [`PUT ${cardsUrl}/${dragon.id}`]: (init) => ({ body: { ...dragon, ...JSON.parse(String(init?.body)), version: 2 } }),
+    })
+    renderWithQuery(<SetEditorPage collectionId={collectionId} setId={setId} />)
+    fireEvent.click(await screen.findByRole('button', { name: 'Artwork' }))
+    const png = new File([new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])], 'a.png')
+
+    fireEvent.change(screen.getByLabelText('Artwork file'), { target: { files: [png] } })
+
+    const alert = await screen.findByRole('alert')
+    expect(alert).toHaveTextContent("Couldn't upload the image.")
+    expect(calls(fetchMock, 'PUT')).toHaveLength(0)
+
+    fireEvent.click(within(alert).getByRole('button', { name: 'Retry' }))
+
+    await waitFor(() => expect(calls(fetchMock, 'PUT')).toHaveLength(1))
+    expect(attempts).toBe(2)
+  })
+
+  it('disables upload while offline', async () => {
+    stubEditor()
+    const online = vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(false)
+    renderWithQuery(<SetEditorPage collectionId={collectionId} setId={setId} />)
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Artwork' }))
+
+    expect(screen.getByRole('button', { name: 'Upload image…' })).toBeDisabled()
+    expect(screen.getByText(/You're offline/)).toBeInTheDocument()
+    online.mockRestore()
+  })
+
   it('shows not found for a Set that is not in this Collection', async () => {
     stubApi({
       [`GET /api/collections/${collectionId}`]: { body: collection },

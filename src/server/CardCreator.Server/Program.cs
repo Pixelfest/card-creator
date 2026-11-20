@@ -1,4 +1,5 @@
 using CardCreator.Server;
+using CardCreator.Server.Artwork;
 using CardCreator.Server.Assets;
 using CardCreator.Server.Cards;
 using CardCreator.Server.Collections;
@@ -15,6 +16,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 );
 builder.Services.AddSingleton<CollectionCreationPolicy>();
 builder.Services.AddAssetLibrary(builder.Configuration, builder.Environment);
+builder.Services.AddArtworkStorage(builder.Configuration, builder.Environment);
 
 var app = builder.Build();
 
@@ -41,6 +43,7 @@ app.MapGet(
 app.MapCollectionEndpoints();
 app.MapSetEndpoints();
 app.MapCardEndpoints();
+app.MapArtworkEndpoints();
 app.MapAssetEndpoints();
 
 // Unknown API paths are a real 404, never the SPA's index.html.
