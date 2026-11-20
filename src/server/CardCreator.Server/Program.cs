@@ -17,6 +17,12 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 builder.Services.AddSingleton<CollectionCreationPolicy>();
 builder.Services.AddAssetLibrary(builder.Configuration, builder.Environment);
 builder.Services.AddArtworkStorage(builder.Configuration, builder.Environment);
+builder.Services.AddSingleton(TimeProvider.System);
+builder.Services.AddScoped<ArtworkPurge>();
+if (builder.Configuration.GetValue("Artwork:PurgeEnabled", true))
+{
+    builder.Services.AddHostedService<ArtworkPurgeService>();
+}
 
 var app = builder.Build();
 
