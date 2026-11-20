@@ -17,10 +17,11 @@ export function isNotFound(error: unknown): boolean {
 }
 
 export async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(url, {
-    ...init,
-    headers: { Accept: 'application/json', 'Content-Type': 'application/json', ...init?.headers },
-  })
+  // JSON bodies are strings; a FormData body gets its multipart Content-Type from the browser.
+  const headers = new Headers(init?.headers)
+  if (!headers.has('Accept')) headers.set('Accept', 'application/json')
+  if (typeof init?.body === 'string' && !headers.has('Content-Type')) headers.set('Content-Type', 'application/json')
+  const response = await fetch(url, { ...init, headers })
   if (!response.ok) {
     let problem: Problem | undefined
     try {

@@ -23,6 +23,48 @@ namespace CardCreator.Server.Data.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("CardCreator.Server.Artwork.ArtworkFile", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasMaxLength(22)
+                        .HasColumnType("character varying(22)")
+                        .HasColumnName("id");
+
+                    b.Property<string>("CollectionId")
+                        .IsRequired()
+                        .HasMaxLength(22)
+                        .HasColumnType("character varying(22)")
+                        .HasColumnName("collection_id");
+
+                    b.Property<string>("ContentType")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("content_type");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateTimeOffset>("LastReferencedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("last_referenced_at");
+
+                    b.Property<string>("Path")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("path");
+
+                    b.HasKey("Id")
+                        .HasName("pk_artwork_files");
+
+                    b.HasIndex("CollectionId")
+                        .HasDatabaseName("ix_artwork_files_collection_id");
+
+                    b.ToTable("artwork_files");
+                });
+
             modelBuilder.Entity("CardCreator.Server.Cards.Card", b =>
                 {
                     b.Property<string>("Id")
@@ -140,6 +182,16 @@ namespace CardCreator.Server.Data.Migrations
                         .HasDatabaseName("ix_sets_collection_id");
 
                     b.ToTable("sets");
+                });
+
+            modelBuilder.Entity("CardCreator.Server.Artwork.ArtworkFile", b =>
+                {
+                    b.HasOne("CardCreator.Server.Collections.Collection", null)
+                        .WithMany()
+                        .HasForeignKey("CollectionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_artwork_files_collections_collection_id");
                 });
 
             modelBuilder.Entity("CardCreator.Server.Cards.Card", b =>

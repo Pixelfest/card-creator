@@ -69,7 +69,7 @@ function CopiesInput({ card, onCommit }: { card: Card; onCommit: (copies: number
  * The fill colour behind everything. Shown live while the picker is open, saved (and one undo
  * step) when it closes: the native `change` event, which React's onChange does not expose.
  */
-function FillColour({ card }: { card: Card }) {
+export function FillColour({ card }: { card: Card }) {
   const input = useRef<HTMLInputElement>(null)
   const commit = useEditor((s) => s.commit)
   const setPreview = useEditor((s) => s.setPreview)
