@@ -56,6 +56,8 @@ public sealed class AppFactory : WebApplicationFactory<Program>, IAsyncLifetime
         builder.UseSetting("CollectionCreation:AllowedIps:0", AllowlistedClient.ToString());
         builder.UseSetting("Assets:Path", RepositoryAssets);
         builder.UseSetting("Artwork:Path", ArtworkRoot);
+        // Tests run the purge themselves, with their own clock.
+        builder.UseSetting("Artwork:PurgeEnabled", "false");
         builder.ConfigureServices(services =>
             services.AddSingleton<IStartupFilter>(new PeerAddressFilter(this))
         );
