@@ -1,8 +1,4 @@
-using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.Formats.Jpeg;
-using SixLabors.ImageSharp.Formats.Png;
-using SixLabors.ImageSharp.Formats.Webp;
-using SixLabors.ImageSharp.Processing;
+using NetVips;
 
 namespace CardCreator.Server.Artwork;
 
@@ -50,47 +46,52 @@ public static class ArtworkProcessor
         return null;
     }
 
-    /// <summary>Re-encodes a detected image. Throws <see cref="InvalidImageContentException"/> on a broken one.</summary>
+    /// <summary>
+    /// Re-encodes a detected image. Each format is opened with its own loader, so nothing else
+    /// libvips can read (TIFF, SVG, PDF, …) is ever reached. Throws <see cref="VipsException"/>
+    /// on a broken image.
+    /// </summary>
     public static ProcessedArtwork Process(byte[] input, ArtworkFormat format)
     {
-        using var image = Image.Load(input);
-        image.Mutate(x => x.AutoOrient());
-
-        var metadata = image.Metadata;
-        metadata.ExifProfile = null;
-        metadata.XmpProfile = null;
-        metadata.IptcProfile = null;
-        foreach (var frame in image.Frames)
+        using var loaded = format switch
         {
-            frame.Metadata.ExifProfile = null;
-            frame.Metadata.XmpProfile = null;
-            frame.Metadata.IptcProfile = null;
-        }
-        metadata.GetPngMetadata().TextData.Clear();
+            ArtworkFormat.Jpeg => Image.JpegloadBuffer(input, failOn: Enums.FailOn.Error),
+            ArtworkFormat.Png => Image.PngloadBuffer(input, failOn: Enums.FailOn.Error),
+            _ => Image.WebploadBuffer(input, failOn: Enums.FailOn.Error),
+        };
+        // Applies the EXIF orientation and drops the tag.
+        using var image = loaded.Autorot();
 
-        using var output = new MemoryStream();
-        switch (format)
+        // Keep only the ICC profile: EXIF, XMP, IPTC and PNG text/comments are all dropped.
+        var bytes = format switch
         {
-            case ArtworkFormat.Jpeg:
-                image.SaveAsJpeg(output, new JpegEncoder { Quality = JpegQuality, SkipMetadata = false });
-                break;
-            case ArtworkFormat.Png:
-                image.SaveAsPng(output, new PngEncoder { SkipMetadata = false });
-                break;
-            case ArtworkFormat.Webp:
-                var lossless = metadata.GetWebpMetadata().FileFormat == WebpFileFormatType.Lossless;
-                image.SaveAsWebp(
-                    output,
-                    new WebpEncoder
-                    {
-                        FileFormat = lossless ? WebpFileFormatType.Lossless : WebpFileFormatType.Lossy,
-                        Quality = WebpQuality,
-                        SkipMetadata = false,
-                    }
-                );
-                break;
+            ArtworkFormat.Jpeg => image.JpegsaveBuffer(q: JpegQuality, keep: Enums.ForeignKeep.Icc),
+            ArtworkFormat.Png => image.PngsaveBuffer(keep: Enums.ForeignKeep.Icc),
+            _ => image.WebpsaveBuffer(q: WebpQuality, lossless: IsLosslessWebp(input), keep: Enums.ForeignKeep.Icc),
+        };
+        return new ProcessedArtwork(bytes, format, image.Width, image.Height);
+    }
+
+    /// <summary>A WebP is lossless when it has no lossy ("VP8 ") bitstream chunk.</summary>
+    public static bool IsLosslessWebp(ReadOnlySpan<byte> webp)
+    {
+        // RIFF header (12 bytes), then chunks: fourcc, little-endian size, data padded to even.
+        long offset = 12;
+        while (offset + 8 <= webp.Length)
+        {
+            var fourcc = webp.Slice((int)offset, 4);
+            if (fourcc.SequenceEqual("VP8 "u8))
+            {
+                return false;
+            }
+            if (fourcc.SequenceEqual("VP8L"u8))
+            {
+                return true;
+            }
+            long size = BitConverter.ToUInt32(webp.Slice((int)offset + 4, 4));
+            offset += 8 + size + (size & 1);
         }
-        return new ProcessedArtwork(output.ToArray(), format, image.Width, image.Height);
+        return false;
     }
 
     public static string ContentType(ArtworkFormat format) =>
