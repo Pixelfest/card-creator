@@ -27,6 +27,46 @@ export async function checkArtworkFile(file: Blob): Promise<string | null> {
   return null
 }
 
+/** The first image on the clipboard, or null when it holds none (say, only text). */
+export function imageFromClipboard(data: DataTransfer | null): File | null {
+  for (const item of Array.from(data?.items ?? [])) {
+    if (item.kind === 'file' && item.type.startsWith('image/')) {
+      const file = item.getAsFile()
+      if (file) return file
+    }
+  }
+  return null
+}
+
+/**
+ * Makes a pasted image uploadable. JPG, PNG and WebP pass through; anything else the browser
+ * can decode (BMP from a Windows copy, GIF, ...) is redrawn as a PNG at its full size. Null
+ * means the browser can't read it.
+ */
+export async function toArtworkBlob(image: Blob): Promise<Blob | null> {
+  const header = new Uint8Array(await image.slice(0, 12).arrayBuffer())
+  if (sniffArtwork(header)) return image
+  try {
+    const bitmap = await createImageBitmap(image)
+    const canvas = document.createElement('canvas')
+    canvas.width = bitmap.width
+    canvas.height = bitmap.height
+    canvas.getContext('2d')?.drawImage(bitmap, 0, 0)
+    bitmap.close()
+    return await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/png'))
+  } catch {
+    return null
+  }
+}
+
+const extensions = { jpeg: 'jpg', png: 'png', webp: 'webp' }
+
+/** `pasted-image.png`, with the extension from the file's real format. */
+export async function pastedName(image: Blob): Promise<string> {
+  const kind = sniffArtwork(new Uint8Array(await image.slice(0, 12).arrayBuffer()))
+  return `pasted-image.${kind ? extensions[kind] : 'png'}`
+}
+
 export function uploadArtwork(collectionId: string, file: Blob, name = 'artwork'): Promise<UploadedArtwork> {
   const form = new FormData()
   form.append('file', file, name)
