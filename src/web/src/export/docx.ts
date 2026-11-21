@@ -23,6 +23,7 @@ import {
   A4_TWIPS,
   CARD_MM,
   COLUMNS,
+  CUT_MARGIN_MM,
   GAP_MM,
   ROWS,
   columnWidthsTwips,
@@ -44,6 +45,14 @@ function cardCell(png: Uint8Array | undefined): TableCell {
   return new TableCell({
     width: { size: mmToTwips(CARD_MM.width), type: WidthType.DXA },
     borders: png ? { top: CUT, bottom: CUT, left: CUT, right: CUT } : undefined,
+    // The cell keeps its 44×72 mm; the image is inset so white shows between it and the line.
+    margins: {
+      marginUnitType: WidthType.DXA,
+      top: mmToTwips(CUT_MARGIN_MM),
+      bottom: mmToTwips(CUT_MARGIN_MM),
+      left: mmToTwips(CUT_MARGIN_MM),
+      right: mmToTwips(CUT_MARGIN_MM),
+    },
     children: [
       new Paragraph({
         spacing: FLUSH,
@@ -52,7 +61,10 @@ function cardCell(png: Uint8Array | undefined): TableCell {
               new ImageRun({
                 type: 'png',
                 data: png,
-                transformation: { width: mmToPx96(CARD_MM.width), height: mmToPx96(CARD_MM.height) },
+                transformation: {
+                  width: mmToPx96(CARD_MM.width - 2 * CUT_MARGIN_MM),
+                  height: mmToPx96(CARD_MM.height - 2 * CUT_MARGIN_MM),
+                },
               }),
             ]
           : [],

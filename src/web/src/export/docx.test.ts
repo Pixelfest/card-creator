@@ -43,7 +43,7 @@ describe('buildDocument', () => {
 
     expect(count(xml, /<wp:inline/g)).toBe(3)
     expect(count(xml, /<wp:anchor/g)).toBe(0)
-    expect(count(xml, /<wp:extent cx="1584000" cy="2592000"\/>/g)).toBe(3)
+    expect(count(xml, /<wp:extent cx="1569600" cy="2577600"\/>/g)).toBe(3)
     // Three card cells with four borders each; empty cells and spacers have none.
     expect(count(xml, /<w:(top|bottom|left|right) w:val="single" w:color="000000" w:sz="2"\/>/g)).toBe(12)
     expect(xml).toMatch(/<w:tblCellMar><w:top w:type="dxa" w:w="0"\/><w:left w:type="dxa" w:w="0"\/><w:bottom w:type="dxa" w:w="0"\/><w:right w:type="dxa" w:w="0"\/><\/w:tblCellMar>/)
