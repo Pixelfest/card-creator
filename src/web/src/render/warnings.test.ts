@@ -11,11 +11,25 @@ const manifest: AssetManifest = {
   fonts: [{ path: 'fonts/Ok.woff2', displayName: 'Ok', url: '/assets/2/fonts/Ok.woff2', aspectRatio: null },
     { path: 'fonts/Broken.woff2', displayName: 'Broken', url: '/assets/3/fonts/Broken.woff2', aspectRatio: null }],
   snippetBackgrounds: [],
+  icons: [{ path: 'icons/star.png', displayName: 'Star', url: '/assets/4/icons/star.png', aspectRatio: 1 }],
   emoji: null,
 }
 const design = (frame: string | null): CardDesign => ({ fill: '#fff', frame, artwork: null, snippets: {} })
 
 describe('missing-asset detection', () => {
+  const withIcons = (icon: string, corners: CardDesign['cornerIcons'] extends infer T ? (T extends { corners: infer C } ? C : never) : never): CardDesign => ({
+    ...design(null),
+    cornerIcons: { icon, corners, size: 8, insetY: 4, insetX: 4 },
+  })
+
+  it('flags a corner icon the library no longer has, only while a corner shows it', () => {
+    expect(missingAssetWarnings(withIcons('icons/gone.png', ['topLeft']), manifest)).toEqual([
+      { part: 'cornerIcons', message: 'The icon “gone.png” is missing.' },
+    ])
+    expect(missingAssetWarnings(withIcons('icons/gone.png', []), manifest)).toEqual([])
+    expect(missingAssetWarnings(withIcons('icons/star.png', ['topLeft']), manifest)).toEqual([])
+  })
+
   it('flags a Frame the library no longer has', () => {
     expect(missingAssetWarnings(design('frames/44x72/gone.png'), manifest)).toEqual([
       { part: 'frame', message: 'The Frame “gone.png” is missing.' },

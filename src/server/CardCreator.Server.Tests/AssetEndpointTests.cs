@@ -19,6 +19,7 @@ public class AssetEndpointTests(AppFactory factory)
         Assert.All(manifest.Frames, f => Assert.Equal(44.0 / 72, f.AspectRatio!.Value, 2));
         Assert.Contains(manifest.Fonts, f => f.DisplayName == "Cinzel Bold");
         Assert.NotEmpty(manifest.SnippetBackgrounds);
+        Assert.NotEmpty(manifest.Icons);
         Assert.NotNull(manifest.Emoji);
     }
 

@@ -24,6 +24,7 @@ const assets = {
     { path: 'fonts/Lato-Regular.woff2', displayName: 'Lato Regular', url: '/assets/l1/fonts/Lato-Regular.woff2', aspectRatio: null },
   ],
   snippetBackgrounds: [],
+  icons: [],
   emoji: null,
 }
 const design = { fill: '#ffffff', frame: 'frames/44x72/gold-border.png', artwork: null, snippets: {} }

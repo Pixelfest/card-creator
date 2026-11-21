@@ -14,6 +14,7 @@ export type AssetManifest = {
   frames: Asset[]
   fonts: Asset[]
   snippetBackgrounds: Asset[]
+  icons: Asset[]
   /** Twemoji SVGs live at `${baseUrl}${codepoints}.svg`; null when there are none. */
   emoji: { baseUrl: string } | null
 }

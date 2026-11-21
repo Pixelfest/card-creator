@@ -14,6 +14,7 @@ public record AssetManifestDto(
     IEnumerable<AssetDto> Frames,
     IEnumerable<AssetDto> Fonts,
     IEnumerable<AssetDto> SnippetBackgrounds,
+    IEnumerable<AssetDto> Icons,
     EmojiDto? Emoji
 );
 
@@ -49,6 +50,7 @@ public static class AssetEndpoints
                     library.Frames.Select(AssetDto.From),
                     library.Fonts.Select(AssetDto.From),
                     library.SnippetBackgrounds.Select(AssetDto.From),
+                    library.Icons.Select(AssetDto.From),
                     library.EmojiBaseUrl is { } baseUrl ? new EmojiDto(baseUrl) : null
                 )
         );

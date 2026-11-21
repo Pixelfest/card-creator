@@ -1,4 +1,5 @@
 import type { ArtworkRef } from '../render/artwork'
+import type { CornerIcons } from '../render/cornerIcons'
 
 // The Card model as the editor holds it. `design` is stored by the server as opaque jsonb.
 
@@ -33,6 +34,8 @@ export type CardDesign = {
   artwork: ArtworkRef | null
   /** At most one per slot. */
   snippets: Partial<Record<SnippetSlot, Snippet>>
+  /** Optional: Cards saved before corner icons existed have none, which draws nothing. */
+  cornerIcons?: CornerIcons
 }
 
 export type CardContent = { name: string; copies: number; design: CardDesign }
