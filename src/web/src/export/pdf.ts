@@ -168,13 +168,13 @@ async function drawText(
   page.pushOperators(...ops)
 }
 
-/** Fetches the font file for every font the cards' text uses. */
+/** Fetches the TrueType/OpenType file (`embedUrl`) for every font the cards' text uses. */
 async function loadFontFiles(cards: readonly PrintCard[], input: ExportInput): Promise<Map<string, Uint8Array>> {
   const paths = new Set(cards.flatMap((card) => card.text.map((t) => t.font)))
   const files = new Map<string, Uint8Array>()
   await Promise.all(
     [...paths].map(async (path) => {
-      const url = input.manifest?.fonts.find((f) => f.path === path)?.url
+      const url = input.manifest?.fonts.find((f) => f.path === path)?.embedUrl
       const response = url ? await fetch(url) : undefined
       if (!response?.ok) throw new Error(`Couldn't load the font ${path} for the PDF.`)
       files.set(path, new Uint8Array(await response.arrayBuffer()))

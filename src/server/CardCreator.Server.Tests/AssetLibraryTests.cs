@@ -91,6 +91,29 @@ public sealed class AssetLibraryTests : IDisposable
     }
 
     [Fact]
+    public void Font_files_with_the_same_name_are_one_font_with_a_ttf_or_otf_to_embed()
+    {
+        Write("fonts/Cinzel-Bold.woff2", [1]);
+        Write("fonts/Cinzel-Bold.ttf", [2]);
+        Write("fonts/Plain.ttf", [3]);
+        Write("fonts/Shape.otf", [4]);
+        Write("fonts/Web-Only.woff2", [5]);
+
+        var library = Scan();
+
+        Assert.Equal(
+            ["fonts/Cinzel-Bold.woff2", "fonts/Plain.ttf", "fonts/Shape.otf", "fonts/Web-Only.woff2"],
+            library.Fonts.Select(f => f.Path)
+        );
+        var cinzel = library.Fonts[0];
+        Assert.Equal("fonts/Cinzel-Bold.ttf", cinzel.Embed!.Path);
+        Assert.NotNull(library.Find(cinzel.Embed.Hash, cinzel.Embed.Path));
+        Assert.Equal(library.Fonts[1].Url, library.Fonts[1].Embed!.Url);
+        Assert.Equal("fonts/Shape.otf", library.Fonts[2].Embed!.Path);
+        Assert.Null(library.Fonts[3].Embed);
+    }
+
+    [Fact]
     public void Icons_are_listed_whatever_their_size_and_are_served_by_path()
     {
         Write("icons/star.png", Png(256, 256));
