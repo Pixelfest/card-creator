@@ -21,10 +21,9 @@ import { imageRequests } from '../render/useRenderResources'
 import type { TextResources } from '../text/textResources'
 import {
   A4_TWIPS,
-  CARD_MM,
   COLUMNS,
-  CUT_MARGIN_MM,
   GAP_MM,
+  PRINT_MM,
   ROWS,
   columnWidthsTwips,
   expandCopies,
@@ -35,7 +34,8 @@ import {
 } from './layout'
 
 // Builds the .docx (docs/spec.md, section 10; research/docx-export.md §4, §9): one fixed-layout
-// table per A4 page, inline images at 44×72 mm, card-cell borders as cut lines.
+// table per A4 page, inline images at 48×76 mm (the 44×72 mm Card plus its 2 mm white cut
+// border, rendered into the PNG), card-cell borders as cut lines.
 
 /** Cut lines: single, ¼ pt, black. */
 const CUT: IBorderOptions = { style: BorderStyle.SINGLE, size: 2, color: '000000' }
@@ -43,16 +43,9 @@ const FLUSH = { before: 0, after: 0 }
 
 function cardCell(png: Uint8Array | undefined): TableCell {
   return new TableCell({
-    width: { size: mmToTwips(CARD_MM.width), type: WidthType.DXA },
+    width: { size: mmToTwips(PRINT_MM.width), type: WidthType.DXA },
     borders: png ? { top: CUT, bottom: CUT, left: CUT, right: CUT } : undefined,
-    // The cell keeps its 44×72 mm; the image is inset so white shows between it and the line.
-    margins: {
-      marginUnitType: WidthType.DXA,
-      top: mmToTwips(CUT_MARGIN_MM),
-      bottom: mmToTwips(CUT_MARGIN_MM),
-      left: mmToTwips(CUT_MARGIN_MM),
-      right: mmToTwips(CUT_MARGIN_MM),
-    },
+    // The PNG carries its own white cut border, so it fills the cell edge to edge.
     children: [
       new Paragraph({
         spacing: FLUSH,
@@ -61,10 +54,7 @@ function cardCell(png: Uint8Array | undefined): TableCell {
               new ImageRun({
                 type: 'png',
                 data: png,
-                transformation: {
-                  width: mmToPx96(CARD_MM.width - 2 * CUT_MARGIN_MM),
-                  height: mmToPx96(CARD_MM.height - 2 * CUT_MARGIN_MM),
-                },
+                transformation: { width: mmToPx96(PRINT_MM.width), height: mmToPx96(PRINT_MM.height) },
               }),
             ]
           : [],
@@ -90,7 +80,7 @@ function pageTable(cards: readonly Uint8Array[]): Table {
     }
     rows.push(
       new TableRow({
-        height: { value: mmToTwips(CARD_MM.height), rule: HeightRule.EXACT },
+        height: { value: mmToTwips(PRINT_MM.height), rule: HeightRule.EXACT },
         cantSplit: true,
         children: cells,
       }),
@@ -164,7 +154,7 @@ export type ExportInput = {
 }
 
 /**
- * Renders each selected Card once to a 520×850 PNG, after loading every image it needs, and
+ * Renders each selected Card once to a 568×898 PNG (520×850 plus the cut border), after loading every image it needs, and
  * builds the .docx with its Copies consecutive. An image that fails to load fails the export
  * (it would be silently missing from the print), except an emoji, which falls back to text
  * exactly as in the editor.

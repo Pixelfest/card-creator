@@ -19,6 +19,11 @@ export function ptToUnits(pt: number): number {
 /** A canvas size in device pixels and the scale from card units to those pixels. */
 export type RenderTarget = { width: number; height: number; scale: number }
 
+/** White border added around a Card in the print PNG, so there is room to cut: 2 mm. */
+export const CUT_BORDER_MM = 2
+/** 2 mm at 300 DPI is 23.6 px; rounded to whole pixels. */
+export const CUT_BORDER_PX = Math.round((CUT_BORDER_MM / 25.4) * EXPORT_DPI)
+
 /** The export renders at exactly 520×850 and ignores devicePixelRatio. */
 export const EXPORT_TARGET: RenderTarget = { width: CARD_WIDTH, height: CARD_HEIGHT, scale: 1 }
 
