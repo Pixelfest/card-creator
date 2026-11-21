@@ -1,5 +1,5 @@
-// The pure part of Export to Word (docs/spec.md, section 10): page geometry, units, which
-// Cards go on which page, and the file name. The docx building and rendering live in docx.ts.
+// The pure part of Export (docs/spec.md, section 10): page geometry, units, which Cards go on
+// which page, and the file name. Rendering lives in render.ts, building in docx.ts and pdf.ts.
 
 import { CUT_BORDER_MM } from '../render/units'
 
@@ -45,6 +45,20 @@ export function gridGeometry() {
     height,
     marginX: (A4_MM.width - width) / 2,
     marginY: (A4_MM.height - height) / 2,
+  }
+}
+
+/**
+ * Top-left corner in mm, from the page's top-left, of the printed card in a page slot
+ * (0–11, row by row). Used by the PDF, which places each card itself instead of in a table.
+ */
+export function slotOriginMm(slot: number): { x: number; y: number } {
+  const { marginX, marginY } = gridGeometry()
+  const column = slot % COLUMNS
+  const row = Math.floor(slot / COLUMNS)
+  return {
+    x: marginX + column * (PRINT_MM.width + GAP_MM),
+    y: marginY + row * (PRINT_MM.height + GAP_MM),
   }
 }
 
@@ -95,15 +109,15 @@ export function pageCount(cardCount: number): number {
 }
 
 /**
- * `{Set name}.docx`, safe on Windows, macOS and Linux: characters that are invalid in file
+ * `{Set name}.{extension}`, safe on Windows, macOS and Linux: characters that are invalid in file
  * names (and control characters) become "_", trailing dots and spaces go, and reserved
  * device names get a "_" prefix. An empty name becomes "cards".
  */
-export function docxFileName(setName: string): string {
+export function exportFileName(setName: string, extension: 'docx' | 'pdf'): string {
   // eslint-disable-next-line no-control-regex
   let name = setName.replace(/[<>:"/\\|?*\u0000-\u001f\u007f]/g, '_').trim()
   name = name.replace(/[. ]+$/, '')
   if (/^(con|prn|aux|nul|com\d|lpt\d)$/i.test(name)) name = `_${name}`
   if (!name) name = 'cards'
-  return `${name.slice(0, 200)}.docx`
+  return `${name.slice(0, 200)}.${extension}`
 }

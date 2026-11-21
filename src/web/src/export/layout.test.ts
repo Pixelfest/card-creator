@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   columnWidthsTwips,
-  docxFileName,
+  exportFileName,
   expandCopies,
   gridGeometry,
   mmToEmu,
@@ -12,6 +12,7 @@ import {
   paginate,
   PRINT_MM,
   rowHeightsTwips,
+  slotOriginMm,
 } from './layout'
 
 describe('unit conversions', () => {
@@ -47,6 +48,13 @@ describe('grid', () => {
   it('has card and gap columns alternating', () => {
     expect(columnWidthsTwips()).toEqual([2722, 114, 2722, 114, 2722, 114, 2722])
     expect(rowHeightsTwips()).toEqual([4309, 114, 4309, 114, 4309])
+  })
+
+  it('places slots row by row, 50 mm apart across and 78 mm down', () => {
+    expect(slotOriginMm(0)).toEqual({ x: 6, y: 32.5 })
+    expect(slotOriginMm(3)).toEqual({ x: 156, y: 32.5 })
+    expect(slotOriginMm(4)).toEqual({ x: 6, y: 110.5 })
+    expect(slotOriginMm(11)).toEqual({ x: 156, y: 188.5 })
   })
 
   it('centres the grid with page margins in twips (about 6 mm and 32.5 mm)', () => {
@@ -98,27 +106,28 @@ describe('paginate', () => {
   })
 })
 
-describe('docxFileName', () => {
-  it('uses the Set name', () => {
-    expect(docxFileName('Dragon Deck')).toBe('Dragon Deck.docx')
+describe('exportFileName', () => {
+  it('uses the Set name and the format', () => {
+    expect(exportFileName('Dragon Deck', 'docx')).toBe('Dragon Deck.docx')
+    expect(exportFileName('Dragon Deck', 'pdf')).toBe('Dragon Deck.pdf')
   })
 
   it('replaces characters that are invalid in file names', () => {
-    expect(docxFileName('A/B\\C:D*E?F"G<H>I|J')).toBe('A_B_C_D_E_F_G_H_I_J.docx')
-    expect(docxFileName('tab\there')).toBe('tab_here.docx')
+    expect(exportFileName('A/B\\C:D*E?F"G<H>I|J', 'docx')).toBe('A_B_C_D_E_F_G_H_I_J.docx')
+    expect(exportFileName('tab\there', 'docx')).toBe('tab_here.docx')
   })
 
   it('drops trailing dots and spaces and guards reserved names', () => {
-    expect(docxFileName('Deck... ')).toBe('Deck.docx')
-    expect(docxFileName('CON')).toBe('_CON.docx')
+    expect(exportFileName('Deck... ', 'docx')).toBe('Deck.docx')
+    expect(exportFileName('CON', 'docx')).toBe('_CON.docx')
   })
 
   it('falls back when nothing is left', () => {
-    expect(docxFileName('   ')).toBe('cards.docx')
-    expect(docxFileName('...')).toBe('cards.docx')
+    expect(exportFileName('   ', 'docx')).toBe('cards.docx')
+    expect(exportFileName('...', 'docx')).toBe('cards.docx')
   })
 
   it('keeps Unicode', () => {
-    expect(docxFileName('Draken & Ridders 🐉')).toBe('Draken & Ridders 🐉.docx')
+    expect(exportFileName('Draken & Ridders 🐉', 'docx')).toBe('Draken & Ridders 🐉.docx')
   })
 })

@@ -7,11 +7,11 @@ import { useOnline } from '../components/useOnline'
 import { useEditor, useEditorApi } from '../editor/editorHooks'
 import { cardWarnings } from '../render/warnings'
 import { useTextResources } from '../text/useTextResources'
-import type { ExportProgress } from './docx'
 import styles from './ExportDialog.module.css'
-import { docxFileName, expandCopies, pageCount } from './layout'
+import { expandCopies, exportFileName, pageCount } from './layout'
+import type { ExportProgress } from './render'
 
-/** The editor header's **Export to Word…** button; disabled while offline (spec section 11). */
+/** The editor header's **Export…** button; disabled while offline (spec section 11). */
 export function ExportButton({ setName }: { setName: string }) {
   const online = useOnline()
   const [open, setOpen] = useState(false)
@@ -23,18 +23,25 @@ export function ExportButton({ setName }: { setName: string }) {
         title={online ? undefined : 'Export needs a connection.'}
         onClick={() => setOpen(true)}
       >
-        Export to Word…
+        Export…
       </button>
       {open && <ExportDialog setName={setName} onClose={() => setOpen(false)} />}
     </>
   )
 }
 
+type Format = 'pdf' | 'docx'
+
+const FORMATS: { value: Format; label: string }[] = [
+  { value: 'pdf', label: 'PDF (.pdf)' },
+  { value: 'docx', label: 'Word (.docx)' },
+]
+
 type Phase = { kind: 'choose' } | { kind: 'exporting'; progress: ExportProgress } | { kind: 'failed'; message: string }
 
 /**
- * Export to Word (docs/spec.md, section 10): pick Cards, see the totals and the warnings for
- * the picked Cards, then render and download `{Set name}.docx`.
+ * Export (docs/spec.md, section 10): pick Cards and a format, see the totals and the warnings
+ * for the picked Cards, then render and download `{Set name}.pdf` or `{Set name}.docx`.
  */
 export function ExportDialog({ setName, onClose }: { setName: string; onClose: () => void }) {
   const cards = useEditor((s) => s.cards)
@@ -45,6 +52,7 @@ export function ExportDialog({ setName, onClose }: { setName: string; onClose: (
   const [selected, setSelected] = useState<ReadonlySet<string>>(
     () => new Set(cards.filter((c) => c.copies > 0).map((c) => c.id)),
   )
+  const [format, setFormat] = useState<Format>('pdf')
   const [phase, setPhase] = useState<Phase>({ kind: 'choose' })
 
   const printable = cards.filter((c) => c.copies > 0)
@@ -73,9 +81,12 @@ export function ExportDialog({ setName, onClose }: { setName: string; onClose: (
     if (!text) return
     setPhase({ kind: 'exporting', progress: { done: 0, total: 1 } })
     try {
-      // Loaded on first export: `docx` is large and only needed here.
-      const { download, exportCards } = await import('./docx')
-      const blob = await exportCards({
+      // Loaded on first export: `docx` and `pdf-lib` are large and only needed here.
+      const [{ download }, build] = await Promise.all([
+        import('./render'),
+        format === 'pdf' ? import('./pdf').then((m) => m.exportPdf) : import('./docx').then((m) => m.exportDocx),
+      ])
+      const blob = await build({
         cards,
         selected,
         manifest,
@@ -83,7 +94,7 @@ export function ExportDialog({ setName, onClose }: { setName: string; onClose: (
         artworkUrl: (id) => artworkUrl(collectionId, id),
         onProgress: (progress) => setPhase({ kind: 'exporting', progress }),
       })
-      download(blob, docxFileName(setName))
+      download(blob, exportFileName(setName, format))
       onClose()
     } catch (error) {
       const detail = error instanceof Error && error.message ? ` ${error.message}` : ''
@@ -96,7 +107,7 @@ export function ExportDialog({ setName, onClose }: { setName: string; onClose: (
 
   return (
     <Dialog
-      title="Export to Word"
+      title="Export"
       wide
       dismissible={!exporting}
       onCancel={close}
@@ -139,6 +150,22 @@ export function ExportDialog({ setName, onClose }: { setName: string; onClose: (
             </li>
           ))}
         </ul>
+      </fieldset>
+
+      <fieldset className={styles.format} disabled={exporting}>
+        <legend className={styles.legend}>Format</legend>
+        {FORMATS.map((f) => (
+          <label key={f.value}>
+            <input
+              type="radio"
+              name="export-format"
+              value={f.value}
+              checked={format === f.value}
+              onChange={() => setFormat(f.value)}
+            />
+            {f.label}
+          </label>
+        ))}
       </fieldset>
 
       <p className={styles.totals} aria-live="polite">
