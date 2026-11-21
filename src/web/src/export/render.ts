@@ -1,12 +1,12 @@
 import type { AssetManifest } from '../assets/api'
 import type { Card } from '../editor/model'
-import { renderCardToPng } from '../render/exportCard'
+import { printImage, renderCardToPng } from '../render/exportCard'
 import { SNIPPET_DRAW_ORDER } from '../editor/snippets'
 import type { SnippetSlot } from '../editor/model'
 import { emojiKey, snippetText, type ImageSource, type SnippetText } from '../render/renderCard'
 import { imageRequests } from '../render/useRenderResources'
 import type { TextResources } from '../text/textResources'
-import { expandCopies } from './layout'
+import { expandCopies, type PrintLayout } from './layout'
 
 // The part of export shared by Word and PDF: render each selected Card once, then hand the
 // printed list (each Card's Copies consecutive) to the format's builder.
@@ -22,6 +22,8 @@ export type ExportInput = {
   manifest: AssetManifest | undefined
   text: TextResources
   artworkUrl: (id: string) => string
+  /** The printed Card size and the page grid. */
+  layout: PrintLayout
   onProgress?: (progress: ExportProgress) => void
 }
 
@@ -33,7 +35,7 @@ export async function renderPrintImages<T>(input: ExportInput, build: (images: U
 }
 
 /**
- * Renders each selected Card once to a 568×898 PNG (520×850 plus the cut border), after
+ * Renders each selected Card once to its print PNG (`printImage` at the layout's Card width), after
  * loading every image it needs, and passes `build` one entry per printed card: the same
  * PrintCard for every Copy, in card-list order. An image that fails to load fails the export
  * (it would be silently missing from the print), except an emoji, which falls back to text
@@ -45,7 +47,7 @@ export async function renderPrintImages<T>(input: ExportInput, build: (images: U
  * stays in the image, since there is no font file a PDF viewer can read.
  */
 export async function renderPrintCards<T>(
-  { cards, selected, manifest, text, artworkUrl, onProgress }: ExportInput,
+  { cards, selected, manifest, text, artworkUrl, layout, onProgress }: ExportInput,
   vectorText: boolean,
   build: (cards: PrintCard[]) => Promise<T>,
 ): Promise<T> {
@@ -53,6 +55,7 @@ export async function renderPrintCards<T>(
   const total = unique.length + 1
   const loaded = new Map<string, Promise<ImageSource | undefined>>()
   const printed = new Map<string, PrintCard>()
+  const image = printImage(layout.cardMm.width)
   const embeddable = new Set(manifest?.fonts.filter((f) => f.embedUrl).map((f) => f.path))
 
   onProgress?.({ done: 0, total })
@@ -88,7 +91,7 @@ export async function renderPrintCards<T>(
         runs.push(placed)
       }
     }
-    const blob = await renderCardToPng(card.design, { images, text, vectorText: vector })
+    const blob = await renderCardToPng(card.design, { images, text, vectorText: vector }, image)
     printed.set(card.id, { png: new Uint8Array(await blob.arrayBuffer()), text: runs })
     onProgress?.({ done: i + 1, total })
   }

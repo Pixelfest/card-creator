@@ -4,6 +4,7 @@ import {
   HeightRule,
   ImageRun,
   Packer,
+  PageOrientation,
   Paragraph,
   Table,
   TableBorders,
@@ -15,29 +16,28 @@ import {
 } from 'docx'
 import {
   A4_TWIPS,
-  COLUMNS,
   GAP_MM,
-  PRINT_MM,
-  ROWS,
   columnWidthsTwips,
   mmToPx96,
   mmToTwips,
   pageMarginsTwips,
   paginate,
+  printLayout,
+  type PrintLayout,
 } from './layout'
 import { renderPrintImages, type ExportInput } from './render'
 
 // Builds the .docx (docs/spec.md, section 10; research/docx-export.md §4, §9): one fixed-layout
-// table per A4 page, inline images at 48×76 mm (the 44×72 mm Card plus its 2 mm white cut
+// table per A4 page, inline images at the printed card size (the Card plus its 2 mm white cut
 // border, rendered into the PNG), card-cell borders as cut lines.
 
 /** Cut lines: single, ¼ pt, black. */
 const CUT: IBorderOptions = { style: BorderStyle.SINGLE, size: 2, color: '000000' }
 const FLUSH = { before: 0, after: 0 }
 
-function cardCell(png: Uint8Array | undefined): TableCell {
+function cardCell({ printMm }: PrintLayout, png: Uint8Array | undefined): TableCell {
   return new TableCell({
-    width: { size: mmToTwips(PRINT_MM.width), type: WidthType.DXA },
+    width: { size: mmToTwips(printMm.width), type: WidthType.DXA },
     borders: png ? { top: CUT, bottom: CUT, left: CUT, right: CUT } : undefined,
     // The PNG carries its own white cut border, so it fills the cell edge to edge.
     children: [
@@ -48,7 +48,7 @@ function cardCell(png: Uint8Array | undefined): TableCell {
               new ImageRun({
                 type: 'png',
                 data: png,
-                transformation: { width: mmToPx96(PRINT_MM.width), height: mmToPx96(PRINT_MM.height) },
+                transformation: { width: mmToPx96(printMm.width), height: mmToPx96(printMm.height) },
               }),
             ]
           : [],
@@ -64,32 +64,33 @@ function gapCell(): TableCell {
   })
 }
 
-function pageTable(cards: readonly Uint8Array[]): Table {
+function pageTable(layout: PrintLayout, cards: readonly Uint8Array[]): Table {
+  const { columns } = layout
   const rows: TableRow[] = []
-  for (let r = 0; r < ROWS; r++) {
+  for (let r = 0; r < layout.rows; r++) {
     const cells: TableCell[] = []
-    for (let c = 0; c < COLUMNS; c++) {
+    for (let c = 0; c < columns; c++) {
       if (c) cells.push(gapCell())
-      cells.push(cardCell(cards[r * COLUMNS + c]))
+      cells.push(cardCell(layout, cards[r * columns + c]))
     }
     rows.push(
       new TableRow({
-        height: { value: mmToTwips(PRINT_MM.height), rule: HeightRule.EXACT },
+        height: { value: mmToTwips(layout.printMm.height), rule: HeightRule.EXACT },
         cantSplit: true,
         children: cells,
       }),
     )
-    if (r < ROWS - 1) {
+    if (r < layout.rows - 1) {
       rows.push(
         new TableRow({
           height: { value: mmToTwips(GAP_MM), rule: HeightRule.EXACT },
           cantSplit: true,
-          children: Array.from({ length: COLUMNS * 2 - 1 }, gapCell),
+          children: Array.from({ length: columns * 2 - 1 }, gapCell),
         }),
       )
     }
   }
-  const widths = columnWidthsTwips()
+  const widths = columnWidthsTwips(layout)
   return new Table({
     layout: TableLayoutType.FIXED,
     borders: TableBorders.NONE,
@@ -104,10 +105,10 @@ function pageTable(cards: readonly Uint8Array[]): Table {
  * The document for a list of card images, one entry per printed card. Pass the same
  * Uint8Array for every Copy of a Card: `docx` stores identical images once.
  */
-export function buildDocument(images: readonly Uint8Array[]): Document {
-  const margins = pageMarginsTwips()
-  const children = paginate(images).flatMap((page, i) => {
-    const table = pageTable(page)
+export function buildDocument(images: readonly Uint8Array[], layout: PrintLayout = printLayout()): Document {
+  const margins = pageMarginsTwips(layout)
+  const children = paginate(images, layout.perPage).flatMap((page, i) => {
+    const table = pageTable(layout, page)
     return i === 0 ? [table] : [new Paragraph({ pageBreakBefore: true, spacing: FLUSH }), table]
   })
   return new Document({
@@ -115,7 +116,12 @@ export function buildDocument(images: readonly Uint8Array[]): Document {
       {
         properties: {
           page: {
-            size: { width: A4_TWIPS.width, height: A4_TWIPS.height },
+            // Given as portrait: `docx` swaps width and height for landscape.
+            size: {
+              width: A4_TWIPS.width,
+              height: A4_TWIPS.height,
+              orientation: layout.orientation === 'landscape' ? PageOrientation.LANDSCAPE : PageOrientation.PORTRAIT,
+            },
             margin: {
               top: margins.top,
               bottom: margins.top,
@@ -138,5 +144,5 @@ export function documentToBlob(document: Document): Promise<Blob> {
 
 /** Renders the selected Cards and builds `{Set name}.docx` from them. */
 export async function exportDocx(input: ExportInput): Promise<Blob> {
-  return renderPrintImages(input, async (images) => documentToBlob(buildDocument(images)))
+  return renderPrintImages(input, async (images) => documentToBlob(buildDocument(images, input.layout)))
 }

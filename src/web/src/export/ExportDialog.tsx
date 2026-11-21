@@ -8,7 +8,15 @@ import { useEditor, useEditorApi } from '../editor/editorHooks'
 import { cardWarnings } from '../render/warnings'
 import { useTextResources } from '../text/useTextResources'
 import styles from './ExportDialog.module.css'
-import { expandCopies, exportFileName, pageCount } from './layout'
+import {
+  CARD_MM,
+  CARD_WIDTH_RANGE_MM,
+  expandCopies,
+  exportFileName,
+  pageCount,
+  parseCardWidth,
+  printLayout,
+} from './layout'
 import type { ExportProgress } from './render'
 
 /** The editor header's **Export…** button; disabled while offline (spec section 11). */
@@ -37,7 +45,31 @@ const FORMATS: { value: Format; label: string }[] = [
   { value: 'docx', label: 'Word (.docx)' },
 ]
 
-type Phase = { kind: 'choose' } | { kind: 'exporting'; progress: ExportProgress } | { kind: 'failed'; message: string }
+/** The last printed Card width, remembered in this browser only. */
+const CARD_WIDTH_KEY = 'cardCreator.export.cardWidthMm'
+
+function storedCardWidth(): string {
+  try {
+    const stored = window.localStorage.getItem(CARD_WIDTH_KEY)
+    if (stored && parseCardWidth(stored) !== undefined) return stored
+  } catch {
+    // Storage blocked: use the default.
+  }
+  return String(CARD_MM.width)
+}
+
+function storeCardWidth(width: number) {
+  try {
+    window.localStorage.setItem(CARD_WIDTH_KEY, String(width))
+  } catch {
+    // Not remembered; the export still works.
+  }
+}
+
+/** One decimal at most: 44, 63.5, 72.4. */
+const mm = (value: number) => String(Math.round(value * 10) / 10)
+
+type Phase ={ kind: 'choose' } | { kind: 'exporting'; progress: ExportProgress } | { kind: 'failed'; message: string }
 
 /**
  * Export (docs/spec.md, section 10): pick Cards and a format, see the totals and the warnings
@@ -54,10 +86,13 @@ export function ExportDialog({ setName, onClose }: { setName: string; onClose: (
   )
   const [format, setFormat] = useState<Format>('pdf')
   const [phase, setPhase] = useState<Phase>({ kind: 'choose' })
+  const [widthInput, setWidthInput] = useState(storedCardWidth)
 
+  const cardWidth = parseCardWidth(widthInput)
+  const layout = printLayout(cardWidth ?? CARD_MM.width)
   const printable = cards.filter((c) => c.copies > 0)
   const cardCount = expandCopies(cards, selected).length
-  const pages = pageCount(cardCount)
+  const pages = pageCount(cardCount, layout.perPage)
   const warnings = text
     ? cards
         .filter((c) => selected.has(c.id) && c.copies > 0)
@@ -78,7 +113,8 @@ export function ExportDialog({ setName, onClose }: { setName: string; onClose: (
   }, [exporting, onClose])
 
   async function run() {
-    if (!text) return
+    if (!text || cardWidth === undefined) return
+    storeCardWidth(cardWidth)
     setPhase({ kind: 'exporting', progress: { done: 0, total: 1 } })
     try {
       // Loaded on first export: `docx` and `pdf-lib` are large and only needed here.
@@ -92,6 +128,7 @@ export function ExportDialog({ setName, onClose }: { setName: string; onClose: (
         manifest,
         text,
         artworkUrl: (id) => artworkUrl(collectionId, id),
+        layout,
         onProgress: (progress) => setPhase({ kind: 'exporting', progress }),
       })
       download(blob, exportFileName(setName, format))
@@ -102,7 +139,7 @@ export function ExportDialog({ setName, onClose }: { setName: string; onClose: (
     }
   }
 
-  const ready = !!text && cardCount > 0 && online
+  const ready = !!text && cardCount > 0 && online && cardWidth !== undefined
   const label = phase.kind === 'failed' ? 'Retry' : warnings.length > 0 ? 'Export anyway' : 'Export'
 
   return (
@@ -166,6 +203,36 @@ export function ExportDialog({ setName, onClose }: { setName: string; onClose: (
             {f.label}
           </label>
         ))}
+      </fieldset>
+
+      <fieldset className={styles.size} disabled={exporting}>
+        <legend className={styles.legend}>Print size</legend>
+        <label>
+          Width
+          <input
+            type="number"
+            inputMode="decimal"
+            min={CARD_WIDTH_RANGE_MM.min}
+            max={CARD_WIDTH_RANGE_MM.max}
+            step={0.5}
+            value={widthInput}
+            aria-invalid={cardWidth === undefined}
+            aria-describedby="export-card-size"
+            onChange={(e) => setWidthInput(e.target.value)}
+          />
+          mm
+        </label>
+        <span>× {mm(layout.cardMm.height)} mm high</span>
+        {widthInput !== String(CARD_MM.width) && (
+          <button type="button" onClick={() => setWidthInput(String(CARD_MM.width))}>
+            Reset to {CARD_MM.width} mm
+          </button>
+        )}
+        <p id="export-card-size" className={cardWidth === undefined ? styles.error : styles.muted}>
+          {cardWidth === undefined
+            ? `Enter a width from ${CARD_WIDTH_RANGE_MM.min} to ${CARD_WIDTH_RANGE_MM.max} mm.`
+            : `${layout.perPage} per page (${layout.columns} × ${layout.rows}), A4 ${layout.orientation}`}
+        </p>
       </fieldset>
 
       <p className={styles.totals} aria-live="polite">
