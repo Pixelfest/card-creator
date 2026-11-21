@@ -38,7 +38,7 @@ public sealed class AssetLibraryTests : IDisposable
     [InlineData("gold-ornate.png", "Gold ornate")]
     [InlineData("Cinzel-Bold.ttf", "Cinzel Bold")]
     [InlineData("old_paper_scroll.png", "Old paper scroll")]
-    [InlineData("Lato-Regular.woff2", "Lato Regular")]
+    [InlineData("Crimson-Pro-Regular.woff2", "Crimson Pro Regular")]
     [InlineData("x.otf", "X")]
     public void Display_names_come_from_file_names(string fileName, string expected)
     {

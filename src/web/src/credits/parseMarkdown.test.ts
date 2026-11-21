@@ -4,13 +4,13 @@ import { parseBlocks } from './parseMarkdown'
 describe('parseBlocks', () => {
   it('splits headings, lists and paragraphs', () => {
     const blocks = parseBlocks(
-      ['# Credits', '', '## Fonts', '', '- **Cinzel** by', '  the authors', '- Lato', '', 'Some', 'text.'].join('\n'),
+      ['# Credits', '', '## Fonts', '', '- **Cinzel** by', '  the authors', '- Crimson Pro', '', 'Some', 'text.'].join('\n'),
     )
 
     expect(blocks).toEqual([
       { kind: 'heading', level: 1, text: 'Credits' },
       { kind: 'heading', level: 2, text: 'Fonts' },
-      { kind: 'list', items: ['**Cinzel** by the authors', 'Lato'] },
+      { kind: 'list', items: ['**Cinzel** by the authors', 'Crimson Pro'] },
       { kind: 'paragraph', text: 'Some text.' },
     ])
   })

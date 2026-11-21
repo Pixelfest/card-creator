@@ -4,7 +4,7 @@
 /** Card size in mm. */
 export const CARD_MM = { width: 44, height: 72 }
 /** White space between the card image and the black cut line, in mm, so there is room to cut. */
-export const CUT_MARGIN_MM = 0.2
+export const CUT_MARGIN_MM = 2
 /** Spacer between cards, in mm. */
 export const GAP_MM = 4
 /** Cards per page: 4 columns × 3 rows. */
