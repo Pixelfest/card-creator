@@ -4,6 +4,10 @@ export const MIN_SIZE = 5
 export const MAX_SIZE = 36
 export const MIN_SNIPPET_ZOOM = 25
 export const MAX_SNIPPET_ZOOM = 200
+export const MIN_OUTLINE_THICKNESS = 2
+export const MAX_OUTLINE_THICKNESS = 30
+/** The outline width a snippet gets when it has not chosen one, as a % of the font size. */
+export const DEFAULT_OUTLINE_THICKNESS = 12
 
 export const SLOT_LABELS: Record<SnippetSlot, string> = { header: 'Header', banner: 'Banner', textbox: 'Textbox' }
 

@@ -10,7 +10,16 @@ import { useTextResources } from '../text/useTextResources'
 import * as actions from './actions'
 import { useEditor } from './editorHooks'
 import type { Card, Snippet, SnippetSlot } from './model'
-import { MAX_SIZE, MAX_SNIPPET_ZOOM, MIN_SIZE, MIN_SNIPPET_ZOOM, SLOT_LABELS } from './snippets'
+import {
+  DEFAULT_OUTLINE_THICKNESS,
+  MAX_OUTLINE_THICKNESS,
+  MAX_SIZE,
+  MAX_SNIPPET_ZOOM,
+  MIN_OUTLINE_THICKNESS,
+  MIN_SIZE,
+  MIN_SNIPPET_ZOOM,
+  SLOT_LABELS,
+} from './snippets'
 import styles from './SnippetProperties.module.css'
 
 const ALIGNMENTS: { value: Snippet['align']; label: string; icon: string }[] = [
@@ -92,10 +101,10 @@ export function SnippetProperties({ slot }: { slot: SnippetSlot }) {
             <span className={`${styles.backgroundThumb} ${styles.none}`} aria-hidden="true" />
           )}
           <span className={styles.currentName}>{currentBackground?.displayName ?? 'None'}</span>
-          <button type="button" onClick={() => setPickingBackground(true)}>
-            Change background
-          </button>
         </div>
+        <button type="button" className={styles.changeBackground} onClick={() => setPickingBackground(true)}>
+          Change background
+        </button>
         {snippet.background && <small className={styles.hint}>The box takes the background's proportions.</small>}
       </fieldset>
       {pickingBackground && (
@@ -170,6 +179,17 @@ export function SnippetProperties({ slot }: { slot: SnippetSlot }) {
           onCommit={(outlineColor) => save({ outlineColor })}
         />
       </div>
+      {snippet.outline && (
+        <RangeField
+          label="Outline thickness"
+          value={snippet.outlineThickness ?? DEFAULT_OUTLINE_THICKNESS}
+          min={MIN_OUTLINE_THICKNESS}
+          max={MAX_OUTLINE_THICKNESS}
+          format={(v) => `${v}%`}
+          onPreview={(outlineThickness) => show({ outlineThickness })}
+          onCommit={(outlineThickness) => save({ outlineThickness })}
+        />
+      )}
 
       <div role="radiogroup" aria-label="Alignment" className={styles.align}>
         {ALIGNMENTS.map((a) => (

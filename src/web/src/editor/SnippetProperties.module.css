@@ -140,6 +140,11 @@
   flex: none;
 }
 
+.changeBackground {
+  display: block;
+  margin-top: 0.4rem;
+}
+
 .currentName {
   flex: 1;
   min-width: 0;
