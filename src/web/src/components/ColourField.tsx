@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react'
 import styles from './ColourField.module.css'
+import ui from '../ui/ui.module.css'
 
 /**
  * A colour picker shown live while open (`onPreview`, on every `input`) and saved when it
@@ -36,7 +37,7 @@ export function ColourField({
   }, [])
 
   return (
-    <label className={styles.field}>
+    <label className={ui.field}>
       <span>{label}</span>
       <span className={styles.row}>
         <input
@@ -48,7 +49,7 @@ export function ColourField({
         />
         <code>{value}</code>
       </span>
-      {hint && <small className={styles.hint}>{hint}</small>}
+      {hint && <small className={ui.hint}>{hint}</small>}
     </label>
   )
 }

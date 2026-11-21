@@ -1,10 +1,10 @@
 .status {
-  font-size: 0.85rem;
+  font-size: var(--text-sm);
   white-space: nowrap;
 }
 
 .saved {
-  color: #2e7d32;
+  color: var(--success);
 }
 
 .saving {
@@ -13,5 +13,5 @@
 
 .retrying,
 .conflict {
-  color: #b26a00;
+  color: var(--warn);
 }

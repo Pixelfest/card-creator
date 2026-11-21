@@ -3,6 +3,7 @@ import { ColourField } from '../components/ColourField'
 import { NameInput } from '../components/NameInput'
 import * as actions from './actions'
 import styles from './CardProperties.module.css'
+import ui from '../ui/ui.module.css'
 import { useEditor } from './editorHooks'
 import { MAX_COPIES, type Card } from './model'
 
@@ -11,11 +12,11 @@ export function CardProperties() {
   const card = useEditor((s) => s.cards.find((c) => c.id === s.selectedId))
   const commit = useEditor((s) => s.commit)
 
-  if (!card) return <p className={styles.hint}>Select a card, or add one.</p>
+  if (!card) return <p className={ui.hint}>Select a card, or add one.</p>
 
   return (
     <div className={styles.fields}>
-      <label className={styles.field}>
+      <label className={ui.field}>
         <span>Name</span>
         <NameInput
           value={card.name}
@@ -47,7 +48,7 @@ function CopiesInput({ card, onCommit }: { card: Card; onCommit: (copies: number
   }
 
   return (
-    <label className={styles.field}>
+    <label className={ui.field}>
       <span>Copies</span>
       <input
         type="number"
@@ -61,7 +62,7 @@ function CopiesInput({ card, onCommit }: { card: Card; onCommit: (copies: number
         onBlur={commit}
         onKeyDown={onKeyDown}
       />
-      {card.copies === 0 && <small className={styles.hint}>Copies 0: this card is left out of the export.</small>}
+      {card.copies === 0 && <small className={ui.hint}>Copies 0: this card is left out of the export.</small>}
     </label>
   )
 }

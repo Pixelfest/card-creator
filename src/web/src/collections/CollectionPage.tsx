@@ -10,6 +10,7 @@ import { useSetMutations } from '../sets/api'
 import { SetsTable } from '../sets/SetsTable'
 import { useCollection, useRenameCollection } from './api'
 import styles from './CollectionPage.module.css'
+import ui from '../ui/ui.module.css'
 import { forget, recordVisit } from './recentCollections'
 
 export function CollectionPage({ collectionId }: { collectionId: string }) {
@@ -37,9 +38,9 @@ export function CollectionPage({ collectionId }: { collectionId: string }) {
     <>
     <main className={styles.page}>
       <Link href={paths.home()}>← Home</Link>
-      {query.isPending && <p className={styles.hint}>Loading…</p>}
+      {query.isPending && <p className={ui.hint}>Loading…</p>}
       {query.isError && (
-        <p role="alert" className={styles.error}>
+        <p role="alert" className={ui.error}>
           Couldn't load the collection.{' '}
           <button type="button" onClick={() => query.refetch()}>
             Retry
@@ -73,14 +74,14 @@ function NewSetButton({ collectionId }: { collectionId: string }) {
     <>
       <button
         type="button"
-        className={styles.primary}
+        className={ui.primary}
         onClick={() => create.mutate()}
         disabled={create.isPending}
       >
         + New set
       </button>
       {create.isError && (
-        <span role="alert" className={styles.error}>
+        <span role="alert" className={ui.error}>
           Couldn't create the set. Try again.
         </span>
       )}
@@ -107,7 +108,7 @@ function CopyLinkButton({ collectionId }: { collectionId: string }) {
       <button type="button" onClick={copy}>
         🔗 Copy collection link
       </button>
-      <span className={styles.hint} aria-live="polite">
+      <span className={ui.hint} aria-live="polite">
         {state === 'copied' && 'Copied'}
         {state === 'failed' && "Couldn't copy. Copy the address bar instead."}
       </span>

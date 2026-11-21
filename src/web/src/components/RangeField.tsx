@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef, useState, type FormEvent } from 'react'
 import styles from './RangeField.module.css'
+import ui from '../ui/ui.module.css'
 
 /**
  * A slider that reports every movement (`onPreview`) and, separately, the value it was
@@ -70,7 +71,7 @@ export function RangeField({
       setTyped(null)
     }
     return (
-      <div className={styles.field}>
+      <div className={`${ui.field} ${styles.range}`}>
         <div className={styles.label}>
           <label htmlFor={`${id}-number`}>{label}</label>
           <span className={styles.number}>
@@ -98,7 +99,7 @@ export function RangeField({
   }
 
   return (
-    <label className={styles.field}>
+    <label className={`${ui.field} ${styles.range}`}>
       <span className={styles.label}>
         {label} <output>{format(value)}</output>
       </span>

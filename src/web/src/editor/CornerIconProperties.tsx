@@ -15,6 +15,7 @@ import {
 import { missingAssetWarnings } from '../render/warnings'
 import * as actions from './actions'
 import styles from './CornerIconProperties.module.css'
+import ui from '../ui/ui.module.css'
 import { useEditor } from './editorHooks'
 
 const percent = (value: number) => `${Math.round(value * 10) / 10}%`
@@ -70,18 +71,18 @@ export function CornerIconProperties() {
   return (
     <div className={styles.wrapper}>
       {warning && (
-        <p role="note" className={styles.warning}>
+        <p role="note" className={ui.warning}>
           ⚠ {warning.message} Nothing is drawn. Pick another icon.
         </p>
       )}
-      {assets.isPending && <p className={styles.hint}>Loading icons…</p>}
-      {assets.isError && <p className={styles.hint}>Couldn't load the icons.</p>}
+      {assets.isPending && <p className={ui.hint}>Loading icons…</p>}
+      {assets.isError && <p className={ui.hint}>Couldn't load the icons.</p>}
 
       <div className={styles.current}>
         {currentIcon ? (
-          <img className={styles.thumb} src={currentIcon.url} alt="" />
+          <img className={`${ui.checker} ${styles.thumb}`} src={currentIcon.url} alt="" />
         ) : (
-          <span className={`${styles.thumb} ${styles.none}`} aria-hidden="true" />
+          <span className={`${ui.checker} ${styles.thumb} ${ui.none}`} aria-hidden="true" />
         )}
         <span className={styles.currentName}>{currentIcon?.displayName ?? 'None'}</span>
         <button type="button" onClick={() => setPicking(true)}>
@@ -99,15 +100,15 @@ export function CornerIconProperties() {
             </button>
           }
         >
-          <div className={`${styles.tiles} ${styles.pickerGrid}`} role="radiogroup" aria-label="Icon">
+          <div className={`${styles.tiles} ${ui.pickerGrid}`} role="radiogroup" aria-label="Icon">
             <button
               type="button"
               role="radio"
               aria-checked={settings.icon === null}
-              className={styles.tile}
+              className={ui.tile}
               onClick={() => choose(null)}
             >
-              <span className={`${styles.thumb} ${styles.none}`} aria-hidden="true" />
+              <span className={`${ui.checker} ${styles.thumb} ${ui.none}`} aria-hidden="true" />
               None
             </button>
             {assets.data?.icons.map((icon) => (
@@ -116,17 +117,17 @@ export function CornerIconProperties() {
                 type="button"
                 role="radio"
                 aria-checked={settings.icon === icon.path}
-                className={styles.tile}
+                className={ui.tile}
                 onClick={() => choose(icon.path)}
               >
-                <img className={styles.thumb} src={icon.url} alt="" loading="lazy" />
+                <img className={`${ui.checker} ${styles.thumb}`} src={icon.url} alt="" loading="lazy" />
                 {icon.displayName}
               </button>
             ))}
           </div>
         </Dialog>
       )}
-      {assets.data && assets.data.icons.length === 0 && <p className={styles.hint}>There are no icons in the library.</p>}
+      {assets.data && assets.data.icons.length === 0 && <p className={ui.hint}>There are no icons in the library.</p>}
 
       <fieldset className={styles.corners}>
         <legend>Corners</legend>
@@ -141,7 +142,7 @@ export function CornerIconProperties() {
       {slider('Size', 'size', MIN_ICON_SIZE, MAX_ICON_SIZE)}
       {slider('Distance from top/bottom', 'insetY', 0, MAX_ICON_INSET)}
       {slider('Distance from sides', 'insetX', 0, MAX_ICON_INSET)}
-      <small className={styles.hint}>
+      <small className={ui.hint}>
         Size is a percentage of the card width; distances are measured from the card edge. All ticked corners share them.
       </small>
     </div>

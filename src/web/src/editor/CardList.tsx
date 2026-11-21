@@ -5,6 +5,7 @@ import { cardWarnings } from '../render/warnings'
 import { useTextResources } from '../text/useTextResources'
 import * as actions from './actions'
 import styles from './CardList.module.css'
+import ui from '../ui/ui.module.css'
 import { useEditor } from './editorHooks'
 import type { Card } from './model'
 
@@ -132,7 +133,7 @@ export function CardList() {
       <button type="button" className={styles.add} onClick={() => commit(actions.addCard(cards, firstFrame))}>
         + Add card
       </button>
-      <p id={hintId} className={styles.hint}>
+      <p id={hintId} className={ui.hint}>
         Drag to reorder, or Alt+↑ / Alt+↓.
       </p>
 

@@ -1,5 +1,6 @@
 import { useEffect, useId, type ReactNode } from 'react'
 import styles from './ConfirmDialog.module.css'
+import ui from '../ui/ui.module.css'
 
 /**
  * A modal shell: a title, content and a row of buttons. Escape or the backdrop calls
@@ -81,7 +82,7 @@ export function ConfirmDialog({
           <button type="button" onClick={onCancel}>
             {cancelLabel}
           </button>
-          <button type="button" className={danger ? styles.danger : styles.primary} onClick={onConfirm} autoFocus>
+          <button type="button" className={danger ? ui.danger : ui.primary} onClick={onConfirm} autoFocus>
             {confirmLabel}
           </button>
         </>

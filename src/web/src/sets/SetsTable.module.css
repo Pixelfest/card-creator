@@ -1,20 +1,20 @@
 .table {
   width: 100%;
   border-collapse: collapse;
-  background: #fff;
+  background: var(--surface-1);
 }
 
 .table th,
 .table td {
   padding: 0.4rem 0.5rem;
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid var(--border);
   text-align: left;
   vertical-align: middle;
 }
 
 .table th {
   font-weight: 600;
-  font-size: 0.85rem;
+  font-size: var(--text-sm);
   color: var(--muted);
 }
 
@@ -27,18 +27,6 @@
   gap: 0.5rem;
   align-items: center;
   justify-content: flex-end;
-}
-
-.danger {
-  color: var(--danger);
-}
-
-.hint {
-  color: var(--muted);
-}
-
-.error {
-  color: var(--danger);
 }
 
 .visuallyHidden {

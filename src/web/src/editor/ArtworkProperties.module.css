@@ -11,12 +11,6 @@
   align-items: flex-start;
 }
 
-.primary {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: #fff;
-}
-
 .hidden {
   display: none;
 }
@@ -27,13 +21,3 @@
   flex-wrap: wrap;
 }
 
-.hint {
-  color: var(--muted);
-  font-size: 0.8rem;
-}
-
-.error {
-  margin: 0;
-  color: var(--danger);
-  font-size: 0.85rem;
-}
