@@ -1,5 +1,5 @@
 .footer {
-  max-width: 48rem;
+  max-width: var(--page-width);
   margin: 2rem auto;
   padding: 1rem;
   border-top: 1px solid var(--border);

@@ -1,13 +1,13 @@
 import { Footer } from '../components/Footer'
+import { TopBar } from '../components/TopBar'
 import { useEffect, useState } from 'react'
 import { isNotFound } from '../api/http'
 import { copyText } from '../clipboard'
 import { NameInput } from '../components/NameInput'
 import { NotFoundPage } from '../NotFoundPage'
-import { Link } from '../Link'
 import { paths } from '../router'
 import { useSetMutations } from '../sets/api'
-import { SetsTable } from '../sets/SetsTable'
+import { SetTiles } from '../sets/SetTiles'
 import { useCollection, useRenameCollection } from './api'
 import styles from './CollectionPage.module.css'
 import ui from '../ui/ui.module.css'
@@ -36,8 +36,8 @@ export function CollectionPage({ collectionId }: { collectionId: string }) {
 
   return (
     <>
-    <main className={styles.page}>
-      <Link href={paths.home()}>← Home</Link>
+    <TopBar crumbs={[{ label: collection?.name ?? 'Collection' }]} />
+    <main className={ui.page}>
       {query.isPending && <p className={ui.hint}>Loading…</p>}
       {query.isError && (
         <p role="alert" className={ui.error}>
@@ -59,7 +59,7 @@ export function CollectionPage({ collectionId }: { collectionId: string }) {
             <NewSetButton collectionId={collection.id} />
             <CopyLinkButton collectionId={collection.id} />
           </div>
-          <SetsTable collectionId={collection.id} />
+          <SetTiles collectionId={collection.id} />
         </>
       )}
     </main>

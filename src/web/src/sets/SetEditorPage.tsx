@@ -3,6 +3,7 @@ import { useEffect, type ReactNode } from 'react'
 import { fetchJson, isNotFound } from '../api/http'
 import { useCollection } from '../collections/api'
 import { NameInput } from '../components/NameInput'
+import { TopBar } from '../components/TopBar'
 import { ArtworkPaste } from '../editor/ArtworkPaste'
 import { CardList } from '../editor/CardList'
 import { CardStage } from '../editor/CardStage'
@@ -12,7 +13,6 @@ import { PartsPanel } from '../editor/PartsPanel'
 import { ConflictDialog, SaveStatus } from '../editor/SaveStatus'
 import { UndoRedo } from '../editor/UndoRedo'
 import { ExportButton } from '../export/ExportDialog'
-import { Link } from '../Link'
 import { NotFoundPage } from '../NotFoundPage'
 import { paths } from '../router'
 import { useSet, useSetMutations } from './api'
@@ -99,28 +99,36 @@ function Layout({
 
   return (
     <div className={styles.editor}>
-      <header className={styles.header}>
-        <Link href={paths.collection(collectionId)} className={styles.back}>
-          ← {collection.data?.name ?? 'Collection'}
-        </Link>
-        {set.data && (
-          <NameInput
-            value={set.data.name}
-            label="Set name"
-            className={styles.name}
-            onCommit={(name) => rename.mutateAsync({ setId, name })}
-          />
-        )}
-        {set.isError && !isNotFound(set.error) && (
-          <span role="alert" className={ui.error}>
-            Couldn't load the set.{' '}
-            <button type="button" onClick={() => set.refetch()}>
-              Retry
-            </button>
-          </span>
-        )}
-        <div className={styles.headerEnd}>{status}</div>
-      </header>
+      <TopBar
+        className={styles.header}
+        crumbs={[
+          { label: collection.data?.name ?? 'Collection', href: paths.collection(collectionId) },
+          {
+            label: (
+              <>
+                {set.data && (
+                  <NameInput
+                    value={set.data.name}
+                    label="Set name"
+                    className={styles.name}
+                    onCommit={(name) => rename.mutateAsync({ setId, name })}
+                  />
+                )}
+                {set.isError && !isNotFound(set.error) && (
+                  <span role="alert" className={ui.error}>
+                    Couldn't load the set.{' '}
+                    <button type="button" onClick={() => set.refetch()}>
+                      Retry
+                    </button>
+                  </span>
+                )}
+              </>
+            ),
+          },
+        ]}
+      >
+        {status}
+      </TopBar>
 
       <aside className={styles.cardList} aria-label="Card list">
         {children}

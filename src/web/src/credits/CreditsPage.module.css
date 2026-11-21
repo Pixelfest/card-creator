@@ -1,7 +1,7 @@
-.page {
-  max-width: 44rem;
-  margin: 3rem auto 1rem;
-  padding: 0 1rem;
+/* Long text reads best in a narrower column. (main. so this wins over ui.page.) */
+main.prose {
+  max-width: 48rem;
+  gap: 0;
 }
 
 .credits h2:first-child {
