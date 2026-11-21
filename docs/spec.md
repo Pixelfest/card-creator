@@ -118,7 +118,7 @@ Decided in [Canvas text rendering](https://github.com/Pixelfest/card-creator/iss
 - The box is horizontally centred. Its width is card width × zoom (25–200%).
 - Vertical position is the box centre, 0–100% of card height. Anything past the card edge is clipped.
 - Height: with a Snippet background, width × the background's aspect ratio (the background fills the box). Without one, the height fits the text.
-- Inside the box: horizontal padding of 8% of box width, the text block vertically centred, line height 1.2, and left/centre/right alignment.
+- Inside the box: horizontal padding of 4% of box width, vertical padding of 0.15 × the font size above and below (6% of box height with a Snippet background), the text block vertically centred, line height 1.2, and left/centre/right alignment.
 - Text size is in pt (5–36). Defaults: textbox 9 pt, header and banner 12 pt.
 - **Overflow:** text that doesn't fit auto-shrinks to as little as 50% of its size. Past that it overflows and the snippet gets a "text doesn't fit" warning.
 - **Outline:** on or off, with a colour and a thickness (2–30% of the font size, default 12%). Draw it with `strokeText` (`lineWidth = 2 × outline`, `lineJoin = "round"`), then `fillText`.

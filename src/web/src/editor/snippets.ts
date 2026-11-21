@@ -25,7 +25,7 @@ export function newSnippet(slot: SnippetSlot, firstFont: string | null): Snippet
   return {
     ...SLOT_DEFAULTS[slot],
     font: firstFont,
-    color: '#1a1a1a',
+    color: '#000000',
     outline: false,
     outlineColor: '#ffffff',
     align: 'center',

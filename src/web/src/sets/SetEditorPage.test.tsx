@@ -470,7 +470,7 @@ describe('SetEditorPage', () => {
       size: 12,
       position: 6,
       zoom: 80,
-      color: '#1a1a1a',
+      color: '#000000',
       outline: false,
       outlineColor: '#ffffff',
       align: 'center',
