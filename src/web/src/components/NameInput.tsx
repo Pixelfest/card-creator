@@ -1,5 +1,6 @@
 import { useRef, useState, type KeyboardEvent } from 'react'
 import styles from './NameInput.module.css'
+import ui from '../ui/ui.module.css'
 
 type NameInputProps = {
   value: string
@@ -59,7 +60,7 @@ function Editor({ value, label, className, onCommit }: NameInputProps) {
         onKeyDown={onKeyDown}
       />
       {failed && (
-        <p role="alert" className={styles.error}>
+        <p role="alert" className={ui.error}>
           Couldn't save the name. Try again.
         </p>
       )}

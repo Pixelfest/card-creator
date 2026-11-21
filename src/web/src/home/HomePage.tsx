@@ -5,6 +5,7 @@ import { loadRecent, openedLabel } from '../collections/recentCollections'
 import { Link } from '../Link'
 import { navigate, paths } from '../router'
 import styles from './HomePage.module.css'
+import ui from '../ui/ui.module.css'
 
 export function HomePage() {
   const creation = useCollectionCreation()
@@ -31,14 +32,14 @@ export function HomePage() {
         <div>
           <button
             type="button"
-            className={styles.newCollection}
+            className={`${ui.primary} ${styles.newCollection}`}
             onClick={createCollection}
             disabled={create.isPending}
           >
             + New collection
           </button>
           {create.isError && (
-            <p role="alert" className={styles.error}>
+            <p role="alert" className={ui.error}>
               Couldn't create the collection. Try again.
             </p>
           )}
@@ -58,15 +59,15 @@ export function HomePage() {
 
       <section>
         <h2>Recently opened</h2>
-        <p className={styles.hint}>Remembered in this browser only.</p>
+        <p className={ui.hint}>Remembered in this browser only.</p>
         {recent.length === 0 ? (
-          <p className={styles.hint}>Nothing yet.</p>
+          <p className={ui.hint}>Nothing yet.</p>
         ) : (
           <ul className={styles.recent}>
             {recent.map((r) => (
               <li key={r.id}>
                 <Link href={paths.collection(r.id)}>{r.name}</Link>{' '}
-                <span className={styles.hint}>{openedLabel(r.openedAt, now)}</span>
+                <span className={ui.hint}>{openedLabel(r.openedAt, now)}</span>
               </li>
             ))}
           </ul>

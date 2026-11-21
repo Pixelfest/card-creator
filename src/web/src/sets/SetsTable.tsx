@@ -6,6 +6,7 @@ import { paths } from '../router'
 import { useSetMutations, useSets, type CardSet } from './api'
 import { DeleteSetDialog } from './DeleteSetDialog'
 import styles from './SetsTable.module.css'
+import ui from '../ui/ui.module.css'
 
 /** The Collection page's table of Sets: rename in place, Open, Duplicate, Delete. */
 export function SetsTable({ collectionId }: { collectionId: string }) {
@@ -14,10 +15,10 @@ export function SetsTable({ collectionId }: { collectionId: string }) {
   const [deleting, setDeleting] = useState<CardSet | null>(null)
   const [now] = useState(() => new Date())
 
-  if (sets.isPending) return <p className={styles.hint}>Loading sets…</p>
+  if (sets.isPending) return <p className={ui.hint}>Loading sets…</p>
   if (sets.isError) {
     return (
-      <p role="alert" className={styles.error}>
+      <p role="alert" className={ui.error}>
         Couldn't load the sets.{' '}
         <button type="button" onClick={() => sets.refetch()}>
           Retry
@@ -25,7 +26,7 @@ export function SetsTable({ collectionId }: { collectionId: string }) {
       </p>
     )
   }
-  if (sets.data.length === 0) return <p className={styles.hint}>No sets yet.</p>
+  if (sets.data.length === 0) return <p className={ui.hint}>No sets yet.</p>
 
   return (
     <>
@@ -67,7 +68,7 @@ export function SetsTable({ collectionId }: { collectionId: string }) {
                   </button>
                   <button
                     type="button"
-                    className={styles.danger}
+                    className={ui.dangerText}
                     onClick={() => setDeleting(set)}
                     aria-label={`Delete ${set.name}`}
                   >
@@ -80,7 +81,7 @@ export function SetsTable({ collectionId }: { collectionId: string }) {
         </tbody>
       </table>
       {duplicate.isError && (
-        <p role="alert" className={styles.error}>
+        <p role="alert" className={ui.error}>
           Couldn't duplicate the set. Try again.
         </p>
       )}

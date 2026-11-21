@@ -4,15 +4,17 @@
   display: grid;
   place-items: center;
   padding: 1rem;
-  background: rgb(0 0 0 / 40%);
+  background: var(--backdrop);
   z-index: 50;
 }
 
 .dialog {
   width: min(28rem, 100%);
   padding: 1.2rem;
-  border-radius: 10px;
-  background: #fff;
+  border-radius: var(--radius-lg);
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
@@ -20,18 +22,12 @@
 
 .dialog h2 {
   margin: 0;
-  font-size: 1.15rem;
+  font-size: var(--text-lg);
   overflow-wrap: anywhere;
 }
 
 .dialog p {
   margin: 0;
-}
-
-.dialog input {
-  padding: 0.35rem 0.5rem;
-  border: 1px solid var(--border);
-  border-radius: 5px;
 }
 
 .buttons {
@@ -40,12 +36,3 @@
   justify-content: flex-end;
 }
 
-.delete:not(:disabled) {
-  background: var(--danger);
-  border-color: var(--danger);
-  color: #fff;
-}
-
-.error {
-  color: var(--danger);
-}

@@ -17,6 +17,7 @@ import { NotFoundPage } from '../NotFoundPage'
 import { paths } from '../router'
 import { useSet, useSetMutations } from './api'
 import styles from './SetEditorPage.module.css'
+import ui from '../ui/ui.module.css'
 
 /** The Set's Cards, fetched fresh each time the editor opens; the editor owns them after. */
 function useInitialCards(collectionId: string, setId: string) {
@@ -47,14 +48,14 @@ export function SetEditorPage({ collectionId, setId }: { collectionId: string; s
     return (
       <Layout collectionId={collectionId} setId={setId}>
         {cards.isError ? (
-          <p role="alert" className={styles.error}>
+          <p role="alert" className={ui.error}>
             Couldn't load the cards.{' '}
             <button type="button" onClick={() => cards.refetch()}>
               Retry
             </button>
           </p>
         ) : (
-          <p className={styles.hint}>Loading…</p>
+          <p className={ui.hint}>Loading…</p>
         )}
       </Layout>
     )
@@ -67,8 +68,8 @@ export function SetEditorPage({ collectionId, setId }: { collectionId: string; s
         setId={setId}
         status={
           <>
-            <UndoRedo />
             <SaveStatus />
+            <UndoRedo />
             <ExportButton setName={set.data?.name ?? ''} />
           </>
         }
@@ -111,7 +112,7 @@ function Layout({
           />
         )}
         {set.isError && !isNotFound(set.error) && (
-          <span role="alert" className={styles.error}>
+          <span role="alert" className={ui.error}>
             Couldn't load the set.{' '}
             <button type="button" onClick={() => set.refetch()}>
               Retry

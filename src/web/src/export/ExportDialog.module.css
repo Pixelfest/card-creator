@@ -42,7 +42,7 @@
 
 .all button {
   padding: 0.1rem 0.5rem;
-  font-size: 0.85rem;
+  font-size: var(--text-sm);
 }
 
 .list {
@@ -51,7 +51,7 @@
   padding: 0.25rem 0;
   max-height: 16rem;
   overflow: auto;
-  border-block: 1px solid #e3e3e3;
+  border-block: 1px solid var(--border);
 }
 
 .list label {
@@ -86,10 +86,6 @@
 }
 
 .warnings {
-  padding: 0.5rem 0.75rem;
-  border-radius: 6px;
-  background: #fff6e0;
-  border: 1px solid #e8c770;
   max-height: 10rem;
   overflow: auto;
 }
@@ -100,16 +96,12 @@
 }
 
 .reminder {
-  font-size: 0.9rem;
+  font-size: var(--text-sm);
   color: var(--muted);
 }
 
 .progress {
   width: 100%;
-}
-
-.error {
-  color: var(--danger);
 }
 
 .size {
@@ -134,11 +126,11 @@
 
 .size button {
   padding: 0.1rem 0.5rem;
-  font-size: 0.85rem;
+  font-size: var(--text-sm);
 }
 
 .size p {
   flex-basis: 100%;
   margin: 0;
-  font-size: 0.9rem;
+  font-size: var(--text-sm);
 }

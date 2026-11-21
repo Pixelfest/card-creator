@@ -2,12 +2,12 @@ import { useCallback, useState } from 'react'
 import { artworkUrl } from '../artwork/api'
 import { useAssets } from '../assets/api'
 import { Dialog } from '../components/ConfirmDialog'
-import dialogStyles from '../components/ConfirmDialog.module.css'
 import { useOnline } from '../components/useOnline'
 import { useEditor, useEditorApi } from '../editor/editorHooks'
 import { cardWarnings } from '../render/warnings'
 import { useTextResources } from '../text/useTextResources'
 import styles from './ExportDialog.module.css'
+import ui from '../ui/ui.module.css'
 import {
   CARD_MM,
   CARD_WIDTH_RANGE_MM,
@@ -153,7 +153,7 @@ export function ExportDialog({ setName, onClose }: { setName: string; onClose: (
           <button type="button" onClick={close} disabled={exporting}>
             Cancel
           </button>
-          <button type="button" className={dialogStyles.primary} onClick={run} disabled={!ready || exporting}>
+          <button type="button" className={ui.primary} onClick={run} disabled={!ready || exporting}>
             {label}
           </button>
         </>
@@ -228,7 +228,7 @@ export function ExportDialog({ setName, onClose }: { setName: string; onClose: (
             Reset to {CARD_MM.width} mm
           </button>
         )}
-        <p id="export-card-size" className={cardWidth === undefined ? styles.error : styles.muted}>
+        <p id="export-card-size" className={cardWidth === undefined ? ui.error : styles.muted}>
           {cardWidth === undefined
             ? `Enter a width from ${CARD_WIDTH_RANGE_MM.min} to ${CARD_WIDTH_RANGE_MM.max} mm.`
             : `${layout.perPage} per page (${layout.columns} × ${layout.rows}), A4 ${layout.orientation}`}
@@ -242,7 +242,7 @@ export function ExportDialog({ setName, onClose }: { setName: string; onClose: (
       {!text && <p className={styles.muted}>Loading fonts…</p>}
 
       {warnings.length > 0 && (
-        <div className={styles.warnings} role="status">
+        <div className={`${ui.warning} ${styles.warnings}`} role="status">
           <p>
             <strong>⚠ Check these before printing:</strong>
           </p>
@@ -269,7 +269,7 @@ export function ExportDialog({ setName, onClose }: { setName: string; onClose: (
         />
       )}
       {phase.kind === 'failed' && (
-        <p role="alert" className={styles.error}>
+        <p role="alert" className={ui.error}>
           {phase.message}
         </p>
       )}

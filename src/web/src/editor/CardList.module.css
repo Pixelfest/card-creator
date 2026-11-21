@@ -18,19 +18,19 @@
   align-items: center;
   gap: 0.35rem;
   padding: 0.3rem 0.35rem;
-  border-radius: 6px;
+  border-radius: var(--radius);
   border-top: 2px solid transparent;
   border-bottom: 2px solid transparent;
   cursor: pointer;
 }
 
 .item:hover {
-  background: #f1efea;
+  background: var(--surface-2);
 }
 
 .selected,
 .selected:hover {
-  background: #e3ecfb;
+  background: var(--accent-soft);
 }
 
 .dragging {
@@ -46,9 +46,9 @@
 }
 
 .grip {
-  color: #aaa;
+  color: var(--muted);
   cursor: grab;
-  font-size: 0.8rem;
+  font-size: var(--text-xs);
   letter-spacing: -2px;
 }
 
@@ -66,7 +66,7 @@
 
 .copies {
   color: var(--muted);
-  font-size: 0.85rem;
+  font-size: var(--text-sm);
   font-variant-numeric: tabular-nums;
 }
 
@@ -79,7 +79,7 @@
 
 .icon:hover {
   border-color: var(--border);
-  background: #fff;
+  background: var(--surface-3);
 }
 
 .add {
@@ -91,12 +91,6 @@
   color: var(--muted);
 }
 
-.hint {
-  margin: 0;
-  color: var(--muted);
-  font-size: 0.8rem;
-}
-
 .warn {
-  color: #b26a00;
+  color: var(--warn);
 }

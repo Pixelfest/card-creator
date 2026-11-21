@@ -10,15 +10,8 @@
 
 .credits code {
   font-size: 0.9em;
-  background: #e9e6df;
+  background: var(--surface-2);
   padding: 0 0.2em;
-  border-radius: 3px;
+  border-radius: var(--radius-sm);
 }
 
-.hint {
-  color: var(--muted);
-}
-
-.error {
-  color: var(--danger);
-}

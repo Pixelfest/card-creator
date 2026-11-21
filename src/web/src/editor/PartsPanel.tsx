@@ -24,8 +24,8 @@ const PARTS: CardPart[] = ['card', 'artwork', 'frame', 'cornerIcons', ...SNIPPET
 const isSlot = (part: CardPart): part is SnippetSlot => (SNIPPET_SLOTS as readonly string[]).includes(part)
 
 /**
- * The right-hand side: a column of part buttons beside the selected part's properties. An
- * empty snippet slot shows "+" and adds a snippet with that slot's defaults.
+ * The right-hand side: a row of part tabs above the selected part's properties. An empty
+ * snippet slot shows "+" and adds a snippet with that slot's defaults.
  */
 export function PartsPanel() {
   const part = useEditor((s) => s.part)

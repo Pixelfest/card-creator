@@ -8,14 +8,8 @@
 }
 
 .name {
-  font-size: 1.6rem;
+  font-size: var(--text-xl);
   font-weight: 600;
-}
-
-.primary {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: #fff;
 }
 
 .actions {
@@ -25,11 +19,3 @@
   flex-wrap: wrap;
 }
 
-.hint {
-  color: var(--muted);
-  font-size: 0.85rem;
-}
-
-.error {
-  color: var(--danger);
-}

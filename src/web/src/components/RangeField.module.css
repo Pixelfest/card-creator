@@ -1,11 +1,3 @@
-.field {
-  display: flex;
-  flex-direction: column;
-  gap: 0.2rem;
-  font-size: 0.85rem;
-  color: var(--muted);
-}
-
 .label {
   display: flex;
   justify-content: space-between;
@@ -16,7 +8,7 @@
   font-variant-numeric: tabular-nums;
 }
 
-.field input {
+.range input {
   width: 100%;
 }
 
@@ -27,6 +19,6 @@
   color: var(--text);
 }
 
-.field .number input {
+.range .number input {
   width: 4.5rem;
 }

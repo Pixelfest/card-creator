@@ -21,6 +21,7 @@ import {
   SLOT_LABELS,
 } from './snippets'
 import styles from './SnippetProperties.module.css'
+import ui from '../ui/ui.module.css'
 
 const ALIGNMENTS: { value: Snippet['align']; label: string; icon: string }[] = [
   { value: 'left', label: 'Align left', icon: '⯇' },
@@ -65,7 +66,7 @@ export function SnippetProperties({ slot }: { slot: SnippetSlot }) {
   return (
     <div className={styles.fields}>
       {warnings.map((w) => (
-        <p key={w.message} role="note" className={styles.warning}>
+        <p key={w.message} role="note" className={ui.warning}>
           ⚠ {w.message}
         </p>
       ))}
@@ -81,7 +82,7 @@ export function SnippetProperties({ slot }: { slot: SnippetSlot }) {
               type="button"
               role="radio"
               aria-checked={snippet.font === font.path}
-              className={styles.font}
+              className={`${ui.selectable} ${styles.font}`}
               style={{ fontFamily: `"${familyName(font)}", serif` }}
               disabled={text?.fonts.failed.has(font.path)}
               onClick={() => save({ font: font.path })}
@@ -96,16 +97,16 @@ export function SnippetProperties({ slot }: { slot: SnippetSlot }) {
         <legend>Background</legend>
         <div className={styles.currentBackground}>
           {currentBackground ? (
-            <img className={styles.backgroundThumb} src={currentBackground.url} alt="" />
+            <img className={`${ui.checker} ${styles.backgroundThumb}`} src={currentBackground.url} alt="" />
           ) : (
-            <span className={`${styles.backgroundThumb} ${styles.none}`} aria-hidden="true" />
+            <span className={`${ui.checker} ${styles.backgroundThumb} ${ui.none}`} aria-hidden="true" />
           )}
           <span className={styles.currentName}>{currentBackground?.displayName ?? 'None'}</span>
         </div>
         <button type="button" className={styles.changeBackground} onClick={() => setPickingBackground(true)}>
           Change background
         </button>
-        {snippet.background && <small className={styles.hint}>The box takes the background's proportions.</small>}
+        {snippet.background && <small className={ui.hint}>The box takes the background's proportions.</small>}
       </fieldset>
       {pickingBackground && (
         <Dialog
@@ -118,15 +119,15 @@ export function SnippetProperties({ slot }: { slot: SnippetSlot }) {
             </button>
           }
         >
-          <div role="radiogroup" aria-label="Background" className={`${styles.backgrounds} ${styles.pickerGrid}`}>
+          <div role="radiogroup" aria-label="Background" className={`${styles.backgrounds} ${ui.pickerGrid}`}>
             <button
               type="button"
               role="radio"
               aria-checked={snippet.background === null}
-              className={styles.background}
+              className={ui.tile}
               onClick={() => chooseBackground(null)}
             >
-              <span className={`${styles.backgroundThumb} ${styles.none}`} aria-hidden="true" />
+              <span className={`${ui.checker} ${styles.backgroundThumb} ${ui.none}`} aria-hidden="true" />
               None
             </button>
             {manifest?.snippetBackgrounds.map((bg) => (
@@ -135,10 +136,10 @@ export function SnippetProperties({ slot }: { slot: SnippetSlot }) {
                 type="button"
                 role="radio"
                 aria-checked={snippet.background === bg.path}
-                className={styles.background}
+                className={ui.tile}
                 onClick={() => chooseBackground(bg.path)}
               >
-                <img className={styles.backgroundThumb} src={bg.url} alt="" loading="lazy" />
+                <img className={`${ui.checker} ${styles.backgroundThumb}`} src={bg.url} alt="" loading="lazy" />
                 {bg.displayName}
               </button>
             ))}
@@ -155,7 +156,7 @@ export function SnippetProperties({ slot }: { slot: SnippetSlot }) {
         onPreview={(size) => show({ size })}
         onCommit={(size) => save({ size })}
       />
-      {shrunkTo !== null && <small className={styles.hint}>Shrunk to {shrunkTo} pt to fit.</small>}
+      {shrunkTo !== null && <small className={ui.hint}>Shrunk to {shrunkTo} pt to fit.</small>}
 
       <ColourField
         key={`colour:${cardId}:${slot}:${saved.color}`}
@@ -197,6 +198,7 @@ export function SnippetProperties({ slot }: { slot: SnippetSlot }) {
             key={a.value}
             type="button"
             role="radio"
+            className={ui.selectable}
             aria-checked={snippet.align === a.value}
             aria-label={a.label}
             onClick={() => save({ align: a.value })}
@@ -225,9 +227,9 @@ export function SnippetProperties({ slot }: { slot: SnippetSlot }) {
         onPreview={(zoom) => show({ zoom })}
         onCommit={(zoom) => save({ zoom })}
       />
-      <small className={styles.hint}>On the card: drag the text up or down, scroll over it to zoom.</small>
+      <small className={ui.hint}>On the card: drag the text up or down, scroll over it to zoom.</small>
 
-      <button type="button" className={styles.remove} onClick={() => commit(actions.setSnippet(cardId, slot, null))}>
+      <button type="button" className={ui.dangerText} onClick={() => commit(actions.setSnippet(cardId, slot, null))}>
         Remove {SLOT_LABELS[slot].toLowerCase()}
       </button>
     </div>
@@ -239,7 +241,7 @@ function SnippetText({ card, slot, value }: { card: Card; slot: SnippetSlot; val
   const commit = useEditor((s) => s.commit)
   const [draft, setDraft] = useState(value)
   return (
-    <label className={styles.field}>
+    <label className={ui.field}>
       <span>Text</span>
       <textarea
         rows={3}
