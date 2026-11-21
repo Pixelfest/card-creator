@@ -3,7 +3,8 @@
 ## Fonts
 
 - **Cinzel** (Regular, Bold) by the Cinzel Project Authors, licensed under the [SIL Open Font License 1.1](https://openfontlicense.org). Licence text: `fonts/OFL-Cinzel.txt`. Source: [github.com/NDISCOVER/Cinzel](https://github.com/NDISCOVER/Cinzel), Latin subset via Fontsource.
-- **Lato** (Regular, Bold) by Łukasz Dziedzic, licensed under the [SIL Open Font License 1.1](https://openfontlicense.org). Licence text: `fonts/OFL-Lato.txt`. Source: [latofonts.com](https://www.latofonts.com), Latin subset via Fontsource.
+- **Crimson Pro** (Regular, Bold) by the Crimson Pro Project Authors, licensed under the [SIL Open Font License 1.1](https://openfontlicense.org). Licence text: `fonts/OFL-CrimsonPro.txt`. Source: [github.com/Fonthausen/CrimsonPro](https://github.com/Fonthausen/CrimsonPro), Latin subset via Fontsource.
+- **Oranienbaum** (Regular) by Oleg Pospelov and Jovanny Lemonad, licensed under the [SIL Open Font License 1.1](https://openfontlicense.org) with Reserved Font Name “Oranienbaum”. Licence text: `fonts/OFL-Oranienbaum.txt`. Latin subset via Fontsource.
 
 ## Frames and Snippet backgrounds
 

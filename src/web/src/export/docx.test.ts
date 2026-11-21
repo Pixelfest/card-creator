@@ -38,12 +38,14 @@ describe('buildDocument', () => {
     expect(count(xml, /<w:trHeight w:val="227" w:hRule="exact"\/>/g)).toBe(4)
   })
 
-  it('places each image inline at exactly 44 × 72 mm with ¼ pt cut-line borders', async () => {
+  it('places each image inline at 40 × 68 mm, 2 mm inside ¼ pt cut-line borders', async () => {
     const { xml } = await unpack([PNG_A, PNG_A, PNG_B])
 
     expect(count(xml, /<wp:inline/g)).toBe(3)
     expect(count(xml, /<wp:anchor/g)).toBe(0)
-    expect(count(xml, /<wp:extent cx="1569600" cy="2577600"\/>/g)).toBe(3)
+    expect(count(xml, /<wp:extent cx="1440000" cy="2448000"\/>/g)).toBe(3)
+    // 2 mm (114 twips) of white between the image and the cut line on every side, in all 12 card cells.
+    expect(count(xml, /<w:tcMar><w:top w:type="dxa" w:w="114"\/><w:left w:type="dxa" w:w="114"\/><w:bottom w:type="dxa" w:w="114"\/><w:right w:type="dxa" w:w="114"\/><\/w:tcMar>/g)).toBe(12)
     // Three card cells with four borders each; empty cells and spacers have none.
     expect(count(xml, /<w:(top|bottom|left|right) w:val="single" w:color="000000" w:sz="2"\/>/g)).toBe(12)
     expect(xml).toMatch(/<w:tblCellMar><w:top w:type="dxa" w:w="0"\/><w:left w:type="dxa" w:w="0"\/><w:bottom w:type="dxa" w:w="0"\/><w:right w:type="dxa" w:w="0"\/><\/w:tblCellMar>/)

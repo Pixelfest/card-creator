@@ -21,7 +21,7 @@ const assets = {
   frames: [{ path: 'frames/44x72/gold-border.png', displayName: 'Gold border', url: '/assets/x/gold.png', aspectRatio: 0.61 }],
   fonts: [
     { path: 'fonts/Cinzel-Bold.woff2', displayName: 'Cinzel Bold', url: '/assets/c1/fonts/Cinzel-Bold.woff2', aspectRatio: null },
-    { path: 'fonts/Lato-Regular.woff2', displayName: 'Lato Regular', url: '/assets/l1/fonts/Lato-Regular.woff2', aspectRatio: null },
+    { path: 'fonts/Crimson-Pro-Regular.woff2', displayName: 'Crimson Pro Regular', url: '/assets/l1/fonts/Crimson-Pro-Regular.woff2', aspectRatio: null },
   ],
   snippetBackgrounds: [],
   icons: [],
@@ -504,9 +504,9 @@ describe('SetEditorPage', () => {
     await waitFor(() => expect(calls(fetchMock, 'PUT')).toHaveLength(1))
     expect(lastHeader().text).toBe('Fire dragon 🔥')
 
-    fireEvent.click(within(screen.getByRole('radiogroup', { name: 'Font' })).getByRole('radio', { name: 'Lato Regular' }))
+    fireEvent.click(within(screen.getByRole('radiogroup', { name: 'Font' })).getByRole('radio', { name: 'Crimson Pro Regular' }))
     await waitFor(() => expect(calls(fetchMock, 'PUT')).toHaveLength(2))
-    expect(lastHeader().font).toBe('fonts/Lato-Regular.woff2')
+    expect(lastHeader().font).toBe('fonts/Crimson-Pro-Regular.woff2')
 
     fireEvent.click(screen.getByRole('radio', { name: 'Align left' }))
     await waitFor(() => expect(calls(fetchMock, 'PUT')).toHaveLength(3))
@@ -525,7 +525,7 @@ describe('SetEditorPage', () => {
   it("shows a doesn't-fit warning on the snippet and in the card list", async () => {
     const crowded = {
       ...dragon,
-      design: { ...design, snippets: { textbox: { text: Array(300).fill('word').join(' '), font: 'fonts/Lato-Regular.woff2', size: 24, position: 80, zoom: 50, color: '#000000', outline: false, outlineColor: '#ffffff', align: 'center', background: null } } },
+      design: { ...design, snippets: { textbox: { text: Array(300).fill('word').join(' '), font: 'fonts/Crimson-Pro-Regular.woff2', size: 24, position: 80, zoom: 50, color: '#000000', outline: false, outlineColor: '#ffffff', align: 'center', background: null } } },
     }
     stubApi({
       [`GET /api/collections/${collectionId}`]: { body: collection },
