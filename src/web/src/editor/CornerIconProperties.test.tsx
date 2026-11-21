@@ -37,7 +37,7 @@ function setup(initial = card('A')) {
 afterEach(() => vi.unstubAllGlobals())
 
 describe('CornerIconProperties', () => {
-  it('shows the defaults for a Card saved before corner icons: no icon, no corners, 8% and 4%', async () => {
+  it('shows the defaults for a Card saved before corner icons: no icon, no corners, 10% and 0%', async () => {
     setup()
 
     fireEvent.click(await screen.findByRole('button', { name: 'Change icon' }))
@@ -45,9 +45,9 @@ describe('CornerIconProperties', () => {
     expect(screen.getByRole('radio', { name: 'None' })).toHaveAttribute('aria-checked', 'true')
     fireEvent.click(screen.getByRole('button', { name: 'Close' }))
     for (const name of ['Top left', 'Top right', 'Bottom left', 'Bottom right']) expect(screen.getByRole('checkbox', { name })).not.toBeChecked()
-    expect(screen.getByLabelText('Size')).toHaveValue(8)
-    expect(screen.getByLabelText('Distance from top/bottom')).toHaveValue(4)
-    expect(screen.getByLabelText('Distance from sides')).toHaveValue(4)
+    expect(screen.getByLabelText('Size')).toHaveValue(10)
+    expect(screen.getByLabelText('Distance from top/bottom')).toHaveValue(0)
+    expect(screen.getByLabelText('Distance from sides')).toHaveValue(0)
   })
 
   it('saves the chosen icon and ticked corners with the card', async () => {
@@ -60,10 +60,10 @@ describe('CornerIconProperties', () => {
     fireEvent.click(screen.getByRole('checkbox', { name: 'Bottom left' }))
     fireEvent.click(screen.getByRole('checkbox', { name: 'Top right' }))
 
-    expect(design().cornerIcons).toEqual({ icon: 'icons/heart.png', corners: ['bottomLeft'], size: 8, insetY: 4, insetX: 4 })
+    expect(design().cornerIcons).toEqual({ icon: 'icons/heart.png', corners: ['bottomLeft'], size: 10, insetY: 0, insetX: 0 })
   })
 
-  it('previews a typed size, then saves it clamped to 2–15% when the box is left', async () => {
+  it('previews a typed size, then saves it clamped to 2–40% when the box is left', async () => {
     const { design, editor } = setup()
     const box = await screen.findByLabelText('Size')
 
@@ -71,8 +71,8 @@ describe('CornerIconProperties', () => {
     expect(editor.store.getState().preview?.design.cornerIcons?.size).toBe(12)
     expect(design().cornerIcons).toBeUndefined()
 
-    fireEvent.change(box, { target: { value: '40' } })
+    fireEvent.change(box, { target: { value: '55' } })
     fireEvent.blur(box)
-    expect(design().cornerIcons?.size).toBe(15)
+    expect(design().cornerIcons?.size).toBe(40)
   })
 })
