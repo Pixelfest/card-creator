@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useAssets } from '../assets/api'
 import { ColourField } from '../components/ColourField'
+import { Dialog } from '../components/ConfirmDialog'
 import { RangeField } from '../components/RangeField'
 import { cardWarnings } from '../render/warnings'
 import { ptToUnits } from '../render/units'
@@ -26,6 +27,7 @@ export function SnippetProperties({ slot }: { slot: SnippetSlot }) {
   const setPreview = useEditor((s) => s.setPreview)
   const manifest = useAssets().data
   const text = useTextResources()
+  const [pickingBackground, setPickingBackground] = useState(false)
 
   if (!card) return null
   const saved = card.design.snippets[slot]
@@ -39,6 +41,12 @@ export function SnippetProperties({ slot }: { slot: SnippetSlot }) {
   const save = (patch: Partial<Snippet>) => {
     commit(actions.patchSnippet(cardId, slot, patch))
     setPreview(null)
+  }
+
+  const currentBackground = manifest?.snippetBackgrounds.find((bg) => bg.path === snippet.background)
+  const chooseBackground = (background: string | null) => {
+    save({ background })
+    setPickingBackground(false)
   }
 
   const warnings = cardWarnings(card.design, manifest, text).filter((w) => w.part === slot)
@@ -77,33 +85,57 @@ export function SnippetProperties({ slot }: { slot: SnippetSlot }) {
 
       <fieldset className={styles.fonts}>
         <legend>Background</legend>
-        <div role="radiogroup" aria-label="Background" className={styles.backgrounds}>
-          <button
-            type="button"
-            role="radio"
-            aria-checked={snippet.background === null}
-            className={styles.background}
-            onClick={() => save({ background: null })}
-          >
+        <div className={styles.currentBackground}>
+          {currentBackground ? (
+            <img className={styles.backgroundThumb} src={currentBackground.url} alt="" />
+          ) : (
             <span className={`${styles.backgroundThumb} ${styles.none}`} aria-hidden="true" />
-            None
+          )}
+          <span className={styles.currentName}>{currentBackground?.displayName ?? 'None'}</span>
+          <button type="button" onClick={() => setPickingBackground(true)}>
+            Change background
           </button>
-          {manifest?.snippetBackgrounds.map((bg) => (
-            <button
-              key={bg.path}
-              type="button"
-              role="radio"
-              aria-checked={snippet.background === bg.path}
-              className={styles.background}
-              onClick={() => save({ background: bg.path })}
-            >
-              <img className={styles.backgroundThumb} src={bg.url} alt="" loading="lazy" />
-              {bg.displayName}
-            </button>
-          ))}
         </div>
         {snippet.background && <small className={styles.hint}>The box takes the background's proportions.</small>}
       </fieldset>
+      {pickingBackground && (
+        <Dialog
+          title="Choose a background"
+          wide
+          onCancel={() => setPickingBackground(false)}
+          buttons={
+            <button type="button" onClick={() => setPickingBackground(false)}>
+              Close
+            </button>
+          }
+        >
+          <div role="radiogroup" aria-label="Background" className={`${styles.backgrounds} ${styles.pickerGrid}`}>
+            <button
+              type="button"
+              role="radio"
+              aria-checked={snippet.background === null}
+              className={styles.background}
+              onClick={() => chooseBackground(null)}
+            >
+              <span className={`${styles.backgroundThumb} ${styles.none}`} aria-hidden="true" />
+              None
+            </button>
+            {manifest?.snippetBackgrounds.map((bg) => (
+              <button
+                key={bg.path}
+                type="button"
+                role="radio"
+                aria-checked={snippet.background === bg.path}
+                className={styles.background}
+                onClick={() => chooseBackground(bg.path)}
+              >
+                <img className={styles.backgroundThumb} src={bg.url} alt="" loading="lazy" />
+                {bg.displayName}
+              </button>
+            ))}
+          </div>
+        </Dialog>
+      )}
 
       <RangeField
         label="Size"

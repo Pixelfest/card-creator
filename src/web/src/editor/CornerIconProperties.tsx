@@ -1,4 +1,6 @@
+import { useState } from 'react'
 import { useAssets } from '../assets/api'
+import { Dialog } from '../components/ConfirmDialog'
 import { RangeField } from '../components/RangeField'
 import {
   CORNER_LABELS,
@@ -27,6 +29,7 @@ export function CornerIconProperties() {
   const commit = useEditor((s) => s.commit)
   const setPreview = useEditor((s) => s.setPreview)
   const assets = useAssets()
+  const [picking, setPicking] = useState(false)
 
   if (!card) return null
   const cardId = card.id
@@ -36,6 +39,11 @@ export function CornerIconProperties() {
   const save = (patch: Partial<CornerIcons>) =>
     commit(actions.updateDesign(cardId, { cornerIcons: { ...settings, ...patch } }))
   const show = (patch: Partial<CornerIcons>) => setPreview({ cardId, design: { cornerIcons: { ...settings, ...patch } } })
+  const currentIcon = assets.data?.icons.find((i) => i.path === settings.icon)
+  const choose = (icon: string | null) => {
+    save({ icon })
+    setPicking(false)
+  }
   const toggle = (corner: Corner) =>
     save({
       corners: settings.corners.includes(corner)
@@ -69,31 +77,55 @@ export function CornerIconProperties() {
       {assets.isPending && <p className={styles.hint}>Loading icons…</p>}
       {assets.isError && <p className={styles.hint}>Couldn't load the icons.</p>}
 
-      <div className={styles.tiles} role="radiogroup" aria-label="Icon">
-        <button
-          type="button"
-          role="radio"
-          aria-checked={settings.icon === null}
-          className={styles.tile}
-          onClick={() => save({ icon: null })}
-        >
+      <div className={styles.current}>
+        {currentIcon ? (
+          <img className={styles.thumb} src={currentIcon.url} alt="" />
+        ) : (
           <span className={`${styles.thumb} ${styles.none}`} aria-hidden="true" />
-          None
+        )}
+        <span className={styles.currentName}>{currentIcon?.displayName ?? 'None'}</span>
+        <button type="button" onClick={() => setPicking(true)}>
+          Change icon
         </button>
-        {assets.data?.icons.map((icon) => (
-          <button
-            key={icon.path}
-            type="button"
-            role="radio"
-            aria-checked={settings.icon === icon.path}
-            className={styles.tile}
-            onClick={() => save({ icon: icon.path })}
-          >
-            <img className={styles.thumb} src={icon.url} alt="" loading="lazy" />
-            {icon.displayName}
-          </button>
-        ))}
       </div>
+      {picking && (
+        <Dialog
+          title="Choose an icon"
+          wide
+          onCancel={() => setPicking(false)}
+          buttons={
+            <button type="button" onClick={() => setPicking(false)}>
+              Close
+            </button>
+          }
+        >
+          <div className={`${styles.tiles} ${styles.pickerGrid}`} role="radiogroup" aria-label="Icon">
+            <button
+              type="button"
+              role="radio"
+              aria-checked={settings.icon === null}
+              className={styles.tile}
+              onClick={() => choose(null)}
+            >
+              <span className={`${styles.thumb} ${styles.none}`} aria-hidden="true" />
+              None
+            </button>
+            {assets.data?.icons.map((icon) => (
+              <button
+                key={icon.path}
+                type="button"
+                role="radio"
+                aria-checked={settings.icon === icon.path}
+                className={styles.tile}
+                onClick={() => choose(icon.path)}
+              >
+                <img className={styles.thumb} src={icon.url} alt="" loading="lazy" />
+                {icon.displayName}
+              </button>
+            ))}
+          </div>
+        </Dialog>
+      )}
       {assets.data && assets.data.icons.length === 0 && <p className={styles.hint}>There are no icons in the library.</p>}
 
       <fieldset className={styles.corners}>

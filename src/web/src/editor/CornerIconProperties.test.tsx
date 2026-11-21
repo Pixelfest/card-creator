@@ -40,8 +40,10 @@ describe('CornerIconProperties', () => {
   it('shows the defaults for a Card saved before corner icons: no icon, no corners, 8% and 4%', async () => {
     setup()
 
+    fireEvent.click(await screen.findByRole('button', { name: 'Change icon' }))
     expect(await screen.findByRole('radio', { name: 'Star' })).toHaveAttribute('aria-checked', 'false')
     expect(screen.getByRole('radio', { name: 'None' })).toHaveAttribute('aria-checked', 'true')
+    fireEvent.click(screen.getByRole('button', { name: 'Close' }))
     for (const name of ['Top left', 'Top right', 'Bottom left', 'Bottom right']) expect(screen.getByRole('checkbox', { name })).not.toBeChecked()
     expect(screen.getByLabelText('Size')).toHaveValue(8)
     expect(screen.getByLabelText('Distance from top/bottom')).toHaveValue(4)
@@ -51,7 +53,9 @@ describe('CornerIconProperties', () => {
   it('saves the chosen icon and ticked corners with the card', async () => {
     const { design } = setup()
 
+    fireEvent.click(await screen.findByRole('button', { name: 'Change icon' }))
     fireEvent.click(await screen.findByRole('radio', { name: 'Heart' }))
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
     fireEvent.click(screen.getByRole('checkbox', { name: 'Top right' }))
     fireEvent.click(screen.getByRole('checkbox', { name: 'Bottom left' }))
     fireEvent.click(screen.getByRole('checkbox', { name: 'Top right' }))
