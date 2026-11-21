@@ -10,6 +10,7 @@ import {
   pageCount,
   pageMarginsTwips,
   paginate,
+  PRINT_MM,
   rowHeightsTwips,
 } from './layout'
 
@@ -38,18 +39,19 @@ describe('unit conversions', () => {
 })
 
 describe('grid', () => {
-  it('is 4 × 3 cards with 4 mm gaps, centred on A4', () => {
-    expect(gridGeometry()).toEqual({ width: 188, height: 224, marginX: 11, marginY: 36.5 })
+  it('is 4 × 3 printed cards of 48 × 76 mm (card plus 2 mm cut border) with 2 mm gaps, centred on A4', () => {
+    expect(PRINT_MM).toEqual({ width: 48, height: 76 })
+    expect(gridGeometry()).toEqual({ width: 198, height: 232, marginX: 6, marginY: 32.5 })
   })
 
   it('has card and gap columns alternating', () => {
-    expect(columnWidthsTwips()).toEqual([2495, 227, 2495, 227, 2495, 227, 2495])
-    expect(rowHeightsTwips()).toEqual([4082, 227, 4082, 227, 4082])
+    expect(columnWidthsTwips()).toEqual([2722, 114, 2722, 114, 2722, 114, 2722])
+    expect(rowHeightsTwips()).toEqual([4309, 114, 4309, 114, 4309])
   })
 
-  it('centres the grid with page margins in twips (about 11 mm and 36.5 mm)', () => {
-    // Width 10661 of 11906, height 12700 of 16838.
-    expect(pageMarginsTwips()).toEqual({ top: 2069, left: 622 })
+  it('centres the grid with page margins in twips (about 6 mm and 32.5 mm)', () => {
+    // Width 11230 of 11906, height 13155 of 16838.
+    expect(pageMarginsTwips()).toEqual({ top: 1841, left: 338 })
   })
 })
 

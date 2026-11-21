@@ -1,12 +1,17 @@
 // The pure part of Export to Word (docs/spec.md, section 10): page geometry, units, which
 // Cards go on which page, and the file name. The docx building and rendering live in docx.ts.
 
+import { CUT_BORDER_MM } from '../render/units'
+
 /** Card size in mm. */
 export const CARD_MM = { width: 44, height: 72 }
-/** White space between the card image and the black cut line, in mm, so there is room to cut. */
-export const CUT_MARGIN_MM = 2
-/** Spacer between cards, in mm. */
-export const GAP_MM = 4
+/**
+ * A printed card in mm: the Card plus the white cut border that is part of its PNG
+ * (render/exportCard.ts). The image fills its cell and the cell's borders are the cut lines.
+ */
+export const PRINT_MM = { width: CARD_MM.width + 2 * CUT_BORDER_MM, height: CARD_MM.height + 2 * CUT_BORDER_MM }
+/** Spacer between cut lines, in mm. */
+export const GAP_MM = 2
 /** Cards per page: 4 columns × 3 rows. */
 export const COLUMNS = 4
 export const ROWS = 3
@@ -20,7 +25,7 @@ export function mmToPx96(mm: number): number {
   return (mm / 25.4) * 96
 }
 
-/** Twips (1/1440 in), rounded up so a 72 mm image is never clipped by an exact-height row. */
+/** Twips (1/1440 in), rounded up so a 76 mm image is never clipped by an exact-height row. */
 export function mmToTwips(mm: number): number {
   // The epsilon keeps values that are whole in exact maths (e.g. 25.4 mm) from rounding up.
   return Math.max(0, Math.ceil((mm / 25.4) * 1440 - 1e-9))
@@ -33,8 +38,8 @@ export function mmToEmu(mm: number): number {
 
 /** The grid's size and the margins that centre it on A4, in mm. */
 export function gridGeometry() {
-  const width = COLUMNS * CARD_MM.width + (COLUMNS - 1) * GAP_MM
-  const height = ROWS * CARD_MM.height + (ROWS - 1) * GAP_MM
+  const width = COLUMNS * PRINT_MM.width + (COLUMNS - 1) * GAP_MM
+  const height = ROWS * PRINT_MM.height + (ROWS - 1) * GAP_MM
   return {
     width,
     height,
@@ -45,12 +50,12 @@ export function gridGeometry() {
 
 /** Table column widths in twips: card, gap, card, gap, … card. */
 export function columnWidthsTwips(): number[] {
-  return Array.from({ length: COLUMNS * 2 - 1 }, (_, i) => mmToTwips(i % 2 ? GAP_MM : CARD_MM.width))
+  return Array.from({ length: COLUMNS * 2 - 1 }, (_, i) => mmToTwips(i % 2 ? GAP_MM : PRINT_MM.width))
 }
 
 /** Row heights in twips: card, gap, card, gap, card. */
 export function rowHeightsTwips(): number[] {
-  return Array.from({ length: ROWS * 2 - 1 }, (_, i) => mmToTwips(i % 2 ? GAP_MM : CARD_MM.height))
+  return Array.from({ length: ROWS * 2 - 1 }, (_, i) => mmToTwips(i % 2 ? GAP_MM : PRINT_MM.height))
 }
 
 /**

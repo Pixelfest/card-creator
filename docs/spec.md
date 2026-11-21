@@ -189,13 +189,13 @@ Decided in [Export details](https://github.com/Pixelfest/card-creator/issues/10)
 **Generation:** in the browser with the `docx` npm package (`Packer.toBlob`).
 
 **Layout**
-- A4 portrait with one fixed-layout table per page: 4 × 3 cards of 44×72 mm with 4 mm spacer columns and rows. The grid is centred (about 11 mm side margins and 36 mm top/bottom).
-- Rows use `hRule=exact`. Cell margins are 0. Each card cell holds an inline image.
+- A4 portrait with one fixed-layout table per page: 4 × 3 cells of 48×76 mm with 2 mm spacer columns and rows. The grid is centred (about 6 mm side margins and 32.5 mm top/bottom).
+- Rows use `hRule=exact`. Cell margins are 0. Each card cell holds an inline image that fills it: the 44×72 mm Card plus a 2 mm white cut border (24 px at 300 DPI) rendered into the PNG.
 - Size images in unrounded px at 96 dpi (`mm/25.4*96`). Round twips up.
 - **Cut lines:** card-cell borders, single, `sz=2` (¼ pt), black.
 
 **Content**
-- Each Card renders once as a 300 DPI PNG and the buffer is reused for its Copies, so `docx` stores each unique image once.
+- Each Card renders once as a 300 DPI PNG (568×898 px including the cut border) and the buffer is reused for its Copies, so `docx` stores each unique image once.
 - Cards appear in card-list order, with each Card's Copies consecutive. Copies 0 is excluded.
 
 **Dialog**

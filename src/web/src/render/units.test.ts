@@ -1,11 +1,16 @@
 import { describe, expect, it } from 'vitest'
-import { CARD_HEIGHT, CARD_WIDTH, EXPORT_TARGET, fitCard, previewTarget, ptToUnits } from './units'
+import { CARD_HEIGHT, CARD_WIDTH, CUT_BORDER_PX, EXPORT_TARGET, fitCard, previewTarget, ptToUnits } from './units'
 
 describe('card units', () => {
   it('are the 300 DPI size of 44×72 mm, rounded to whole pixels', () => {
     expect((44 / 25.4) * 300).toBeCloseTo(519.7, 1)
     expect((72 / 25.4) * 300).toBeCloseTo(850.4, 1)
     expect([CARD_WIDTH, CARD_HEIGHT]).toEqual([520, 850])
+  })
+
+  it('give a 2 mm cut border of 24 px at 300 DPI', () => {
+    expect((2 / 25.4) * 300).toBeCloseTo(23.6, 1)
+    expect(CUT_BORDER_PX).toBe(24)
   })
 
   it('convert points at 300 DPI', () => {
