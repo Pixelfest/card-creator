@@ -329,6 +329,118 @@ describe('SetEditorPage', () => {
     expect(attempts).toBe(2)
   })
 
+  describe('pasting an image', () => {
+    const pngBytes = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0]
+    const png = () => new File([new Uint8Array(pngBytes)], 'image.png', { type: 'image/png' })
+    const clipboard = (...items: { type: string; file?: File }[]) => ({
+      items: items.map((i) => ({ kind: i.file ? 'file' : 'string', type: i.type, getAsFile: () => i.file ?? null })),
+    })
+    const uploaded = { id: 'artcccccccccccccccccc', url: '/x', width: 400, height: 300, contentType: 'image/png' }
+    const artworkUrl = `/api/collections/${collectionId}/artwork`
+    const withArtwork = { ...dragon, design: { ...design, artwork: { id: 'artoldoldoldoldoldold', width: 10, height: 10, zoom: 1, x: 0, y: 0 } } }
+    const stubPaste = (card: Omit<typeof dragon, 'design'> & { design: object } = dragon) =>
+      stubEditor({
+        [`GET ${cardsUrl}`]: { body: [card, knight] },
+        [`POST ${artworkUrl}`]: { status: 201, body: uploaded },
+        [`PUT ${cardsUrl}/${card.id}`]: (init) => ({ body: { ...card, ...JSON.parse(String(init?.body)), version: 2 } }),
+      })
+    const posts = (fetchMock: ReturnType<typeof stubApi>) => calls(fetchMock, 'POST').filter(([url]) => String(url).endsWith('/artwork'))
+
+    it('puts a pasted image on a card without Artwork, whichever part is open', async () => {
+      const fetchMock = stubPaste()
+      renderWithQuery(<SetEditorPage collectionId={collectionId} setId={setId} />)
+      await screen.findByLabelText('Card name')
+
+      fireEvent.paste(document.body, { clipboardData: clipboard({ type: 'text/plain' }, { type: 'image/png', file: png() }) })
+
+      await waitFor(() => expect(calls(fetchMock, 'PUT')).toHaveLength(1))
+      expect((posts(fetchMock)[0][1]?.body as FormData).get('file')).toHaveProperty('name', 'pasted-image.png')
+      expect(JSON.parse(String(calls(fetchMock, 'PUT')[0][1]?.body)).design.artwork).toMatchObject({ id: uploaded.id, zoom: 1 })
+    })
+
+    it('asks before replacing existing Artwork, and uploads nothing when cancelled', async () => {
+      const fetchMock = stubPaste(withArtwork)
+      renderWithQuery(<SetEditorPage collectionId={collectionId} setId={setId} />)
+      await screen.findByLabelText('Card name')
+
+      fireEvent.paste(document.body, { clipboardData: clipboard({ type: 'image/png', file: png() }) })
+      const dialog = await screen.findByRole('dialog', { name: 'Replace the current image?' })
+      fireEvent.click(within(dialog).getByRole('button', { name: 'Cancel' }))
+
+      expect(screen.queryByRole('dialog')).toBeNull()
+      expect(posts(fetchMock)).toHaveLength(0)
+      expect(calls(fetchMock, 'PUT')).toHaveLength(0)
+    })
+
+    it('replaces existing Artwork once confirmed', async () => {
+      const fetchMock = stubPaste(withArtwork)
+      renderWithQuery(<SetEditorPage collectionId={collectionId} setId={setId} />)
+      await screen.findByLabelText('Card name')
+
+      fireEvent.paste(document.body, { clipboardData: clipboard({ type: 'image/png', file: png() }) })
+      fireEvent.click(await screen.findByRole('button', { name: 'Replace' }))
+
+      await waitFor(() => expect(calls(fetchMock, 'PUT')).toHaveLength(1))
+      expect(JSON.parse(String(calls(fetchMock, 'PUT')[0][1]?.body)).design.artwork.id).toBe(uploaded.id)
+    })
+
+    it('ignores a paste into a text field and a clipboard with no image', async () => {
+      const fetchMock = stubPaste()
+      renderWithQuery(<SetEditorPage collectionId={collectionId} setId={setId} />)
+      const name = await screen.findByLabelText('Card name')
+
+      fireEvent.paste(name, { clipboardData: clipboard({ type: 'image/png', file: png() }) })
+      fireEvent.paste(document.body, { clipboardData: clipboard({ type: 'text/plain' }) })
+
+      await new Promise((r) => setTimeout(r, 20))
+      expect(posts(fetchMock)).toHaveLength(0)
+      expect(screen.queryByRole('alert')).toBeNull()
+    })
+
+    it('says so when the pasted image is not a usable format and cannot be converted', async () => {
+      const fetchMock = stubPaste()
+      vi.stubGlobal('createImageBitmap', () => Promise.reject(new Error('no')))
+      renderWithQuery(<SetEditorPage collectionId={collectionId} setId={setId} />)
+      await screen.findByLabelText('Card name')
+
+      fireEvent.paste(document.body, { clipboardData: clipboard({ type: 'image/x-emf', file: new File(['emf'], 'a.emf', { type: 'image/x-emf' }) }) })
+
+      expect(await screen.findByRole('alert')).toHaveTextContent("Couldn't read an image from the clipboard.")
+      expect(posts(fetchMock)).toHaveLength(0)
+    })
+
+    it('converts a BMP to PNG before uploading', async () => {
+      const fetchMock = stubPaste()
+      vi.stubGlobal('createImageBitmap', () => Promise.resolve({ width: 4, height: 3, close: () => {} }))
+      const getContext = vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({ drawImage: () => {} } as never)
+      const toBlob = vi
+        .spyOn(HTMLCanvasElement.prototype, 'toBlob')
+        .mockImplementation((callback) => callback(new Blob([new Uint8Array(pngBytes)], { type: 'image/png' })))
+      renderWithQuery(<SetEditorPage collectionId={collectionId} setId={setId} />)
+      await screen.findByLabelText('Card name')
+
+      fireEvent.paste(document.body, { clipboardData: clipboard({ type: 'image/bmp', file: new File(['BM'], 'a.bmp', { type: 'image/bmp' }) }) })
+
+      await waitFor(() => expect(calls(fetchMock, 'PUT')).toHaveLength(1))
+      expect((posts(fetchMock)[0][1]?.body as FormData).get('file')).toHaveProperty('name', 'pasted-image.png')
+      getContext.mockRestore()
+      toBlob.mockRestore()
+    })
+
+    it('does nothing but say so while offline', async () => {
+      const fetchMock = stubPaste()
+      const online = vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(false)
+      renderWithQuery(<SetEditorPage collectionId={collectionId} setId={setId} />)
+      await screen.findByLabelText('Card name')
+
+      fireEvent.paste(document.body, { clipboardData: clipboard({ type: 'image/png', file: png() }) })
+
+      expect(await screen.findByRole('alert')).toHaveTextContent("You're offline")
+      expect(posts(fetchMock)).toHaveLength(0)
+      online.mockRestore()
+    })
+  })
+
   it('disables upload while offline', async () => {
     stubEditor()
     const online = vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(false)

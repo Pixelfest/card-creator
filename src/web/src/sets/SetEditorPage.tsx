@@ -3,6 +3,7 @@ import { useEffect, type ReactNode } from 'react'
 import { fetchJson, isNotFound } from '../api/http'
 import { useCollection } from '../collections/api'
 import { NameInput } from '../components/NameInput'
+import { ArtworkPaste } from '../editor/ArtworkPaste'
 import { CardList } from '../editor/CardList'
 import { CardStage } from '../editor/CardStage'
 import { EditorProvider } from '../editor/EditorProvider'
@@ -75,6 +76,7 @@ export function SetEditorPage({ collectionId, setId }: { collectionId: string; s
         <CardList />
       </Layout>
       <ConflictDialog />
+      <ArtworkPaste />
     </EditorProvider>
   )
 }
