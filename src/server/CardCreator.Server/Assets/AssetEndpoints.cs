@@ -2,10 +2,11 @@ using Microsoft.Net.Http.Headers;
 
 namespace CardCreator.Server.Assets;
 
-public record AssetDto(string Path, string DisplayName, string Url, double? AspectRatio)
+/// <param name="EmbedUrl">Fonts only: the .ttf/.otf to embed in a PDF, or null when there is none.</param>
+public record AssetDto(string Path, string DisplayName, string Url, double? AspectRatio, string? EmbedUrl = null)
 {
     public static AssetDto From(AssetFile asset) =>
-        new(asset.Path, asset.DisplayName, asset.Url, asset.AspectRatio);
+        new(asset.Path, asset.DisplayName, asset.Url, asset.AspectRatio, asset.Embed?.Url);
 }
 
 public record EmojiDto(string BaseUrl);

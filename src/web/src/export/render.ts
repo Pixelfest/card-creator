@@ -39,9 +39,10 @@ export async function renderPrintImages<T>(input: ExportInput, build: (images: U
  * (it would be silently missing from the print), except an emoji, which falls back to text
  * exactly as in the editor. Building counts as the last progress step.
  *
- * With `vectorText`, every snippet whose font loaded is left out of the PNG and returned as
- * text runs instead, for the PDF to draw as real text. A snippet on the fallback font (its font
- * missing or failed) stays in the image, since there is no font file to embed.
+ * With `vectorText`, every snippet whose font loaded and has a TrueType/OpenType file to embed
+ * (the manifest's `embedUrl`) is left out of the PNG and returned as text runs instead, for the
+ * PDF to draw as real text. Any other snippet (on the fallback font, or a WOFF2-only font)
+ * stays in the image, since there is no font file a PDF viewer can read.
  */
 export async function renderPrintCards<T>(
   { cards, selected, manifest, text, artworkUrl, onProgress }: ExportInput,
@@ -52,6 +53,7 @@ export async function renderPrintCards<T>(
   const total = unique.length + 1
   const loaded = new Map<string, Promise<ImageSource | undefined>>()
   const printed = new Map<string, PrintCard>()
+  const embeddable = new Set(manifest?.fonts.filter((f) => f.embedUrl).map((f) => f.path))
 
   onProgress?.({ done: 0, total })
   for (const [i, card] of unique.entries()) {
@@ -79,7 +81,7 @@ export async function renderPrintCards<T>(
     if (vectorText) {
       for (const slot of SNIPPET_DRAW_ORDER) {
         const font = card.design.snippets[slot]?.font
-        if (!font || !text.fonts.families.has(font)) continue
+        if (!font || !text.fonts.families.has(font) || !embeddable.has(font)) continue
         const placed = snippetText(card.design, slot, text)
         if (!placed) continue
         vector.add(slot)

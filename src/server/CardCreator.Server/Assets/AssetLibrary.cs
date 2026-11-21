@@ -7,6 +7,10 @@ namespace CardCreator.Server.Assets;
 /// <param name="Path">Relative to the assets folder, with forward slashes. Cards store this.</param>
 /// <param name="Url">Content-hashed, so it can be cached forever.</param>
 /// <param name="AspectRatio">Width / height, for images only.</param>
+/// <param name="Embed">
+/// Fonts only: the TrueType/OpenType file of the same font, for embedding in a PDF (PDF
+/// viewers cannot read WOFF2). The font itself when it is a .ttf or .otf; null when there is none.
+/// </param>
 public record AssetFile(
     string Path,
     string DisplayName,
@@ -14,13 +18,16 @@ public record AssetFile(
     double? AspectRatio,
     string Hash,
     string FullPath,
-    string ContentType
+    string ContentType,
+    AssetFile? Embed = null
 );
 
 /// <summary>
 /// The asset library, scanned once at startup:
 /// <c>frames/44x72/*.png</c>, <c>fonts/*.woff2|ttf|otf</c>, <c>snippet-backgrounds/*.png</c>,
 /// <c>icons/*.png</c>, <c>emoji/*.svg</c> (Twemoji) and an optional <c>CREDITS.md</c>.
+/// Font files that differ only in extension are one font: the browser draws the .woff2 and
+/// the PDF export embeds the .ttf (or .otf).
 /// </summary>
 public sealed class AssetLibrary
 {
@@ -51,6 +58,7 @@ public sealed class AssetLibrary
         Credits = credits;
         _byPath = frames
             .Concat(fonts)
+            .Concat(fonts.Select(f => f.Embed).OfType<AssetFile>().Where(e => fonts.All(f => f.Path != e.Path)))
             .Concat(snippetBackgrounds)
             .Concat(icons)
             .ToDictionary(a => a.Path, StringComparer.Ordinal);
@@ -98,9 +106,7 @@ public sealed class AssetLibrary
         }
 
         var frames = ScanImages(root, "frames/44x72", logger, requireFrameRatio: true);
-        var fonts = Files(root, "fonts", ".woff2", ".ttf", ".otf")
-            .Select(file => Describe(root, file, aspectRatio: null))
-            .ToList();
+        var fonts = ScanFonts(root);
         var backgrounds = ScanImages(root, "snippet-backgrounds", logger, requireFrameRatio: false);
         var icons = ScanImages(root, "icons", logger, requireFrameRatio: false);
 
@@ -142,6 +148,36 @@ public sealed class AssetLibrary
     /// <summary>Whether a Frame of this size is within about 1% of 44:72.</summary>
     public static bool HasFrameRatio(int width, int height) =>
         height > 0 && Math.Abs((double)width / height / FrameRatio - 1) <= FrameRatioTolerance;
+
+    /// <summary>
+    /// One font per file name stem. The browser gets the .woff2 when there is one (it is the
+    /// smallest), else the .ttf, else the .otf; the PDF gets the .ttf, else the .otf.
+    /// </summary>
+    private static List<AssetFile> ScanFonts(string root)
+    {
+        string[] drawPreference = [".woff2", ".ttf", ".otf"];
+        string[] embedPreference = [".ttf", ".otf"];
+        var result = new List<AssetFile>();
+        var byStem = Files(root, "fonts", drawPreference)
+            .GroupBy(f => System.IO.Path.GetFileNameWithoutExtension(f), StringComparer.Ordinal);
+        foreach (var variants in byStem)
+        {
+            string? Pick(string[] preference) =>
+                preference
+                    .Select(ext =>
+                        variants.FirstOrDefault(f => System.IO.Path.GetExtension(f).ToLowerInvariant() == ext)
+                    )
+                    .FirstOrDefault(f => f is not null);
+
+            var draw = Describe(root, Pick(drawPreference)!, aspectRatio: null);
+            var embedFile = Pick(embedPreference);
+            var embed = embedFile is null ? null
+                : embedFile == draw.FullPath ? draw
+                : Describe(root, embedFile, aspectRatio: null);
+            result.Add(draw with { Embed = embed });
+        }
+        return result.OrderBy(f => f.Path, StringComparer.Ordinal).ToList();
+    }
 
     private static List<AssetFile> ScanImages(
         string root,

@@ -88,7 +88,7 @@ assets/
 - The assets are copied into the image. The backend scans them at startup and serves a manifest at `/api/assets`, grouped by type.
 - Asset URLs carry a content hash, so they can be cached long-term.
 - Frames are PNG at a 44:72 ratio (ideal 520×850 px). A Frame more than about 1% off that ratio is skipped with a log warning.
-- One font file is one selectable font.
+- One font file is one selectable font, except that files differing only in extension are one font: the browser draws the `.woff2` (else `.ttf`, else `.otf`) and the PDF export embeds the `.ttf` (else `.otf`), since PDF viewers cannot read WOFF2.
 - Display names come from file names: `gold-ornate.png` → "Gold ornate".
 - **Missing assets:** a Card stores asset paths. If a file disappears, the Card keeps the path and the editor renders without it, using a fallback font for a missing font. The Card shows ⚠ in the card list and a note on the affected control. Export still works and lists the warning.
 - **Credits** is a footer link to a page with Twemoji's CC-BY 4.0 attribution plus `assets/CREDITS.md`.
@@ -197,7 +197,7 @@ Decided in [Export details](https://github.com/Pixelfest/card-creator/issues/10)
 **PDF**
 - The same A4 grid, with each 48×76 mm image drawn at its slot and a ¼ pt black rectangle on its edge as the cut line.
 - Each unique image is embedded once and drawn for every Copy.
-- Snippet text is not in the PDF's card image: it is drawn on top as real text in the snippet's embedded font (whole font files, via `@pdf-lib/fontkit`), at the same positions as the canvas layout, clipped to the Card, so it prints sharp. Outlines are a stroke at twice the outline width with round joins, drawn before the fill, as on the canvas. Snippet backgrounds and emoji stay in the image. A snippet on the fallback font (its font missing or failed) stays in the image too. Because the image is underneath, a snippet's text is drawn above every snippet background, even one that is higher in the draw order.
+- Snippet text is not in the PDF's card image: it is drawn on top as real text in the snippet's embedded font (whole font files, via `@pdf-lib/fontkit`), at the same positions as the canvas layout, clipped to the Card, so it prints sharp. Outlines are a stroke at twice the outline width with round joins, drawn before the fill, as on the canvas. Snippet backgrounds and emoji stay in the image. A snippet on the fallback font (its font missing or failed), or on a font with no `.ttf`/`.otf` file, stays in the image too. Because the image is underneath, a snippet's text is drawn above every snippet background, even one that is higher in the draw order.
 
 **Content**
 - Each Card renders once as a 300 DPI PNG (568×898 px including the cut border) and the buffer is reused for its Copies, so `docx` stores each unique image once.

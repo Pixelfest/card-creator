@@ -8,6 +8,11 @@ export type Asset = {
   url: string
   /** Width / height, for images only. */
   aspectRatio: number | null
+  /**
+   * Fonts only: the .ttf/.otf of the same font, which the PDF export embeds (PDF viewers cannot
+   * read WOFF2). Null or absent when the library has no such file for this font.
+   */
+  embedUrl?: string | null
 }
 
 export type AssetManifest = {

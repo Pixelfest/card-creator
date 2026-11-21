@@ -65,7 +65,8 @@ describe('hexToRgb', () => {
 
 describe('buildPdf text', () => {
   const FONT = 'fonts/Cinzel-Bold.woff2'
-  const fontBytes = new Uint8Array(readFileSync(resolve(__dirname, '../../../../assets/fonts/Cinzel-Bold.woff2')))
+  // The export embeds the font's .ttf variant (its embedUrl), never the WOFF2.
+  const fontBytes = new Uint8Array(readFileSync(resolve(__dirname, '../../../../assets/fonts/Cinzel-Bold.ttf')))
   const text = (outlineWidth: number) => ({
     font: FONT,
     fontSize: 50,
@@ -105,5 +106,13 @@ describe('buildPdf text', () => {
     const pdf = await PDFDocument.load(bytes)
     const fontFiles = pdf.context.enumerateIndirectObjects().filter(([, o]) => o instanceof PDFDict && o.get(PDFName.of('Type'))?.toString() === '/FontDescriptor')
     expect(fontFiles).toHaveLength(1)
+  })
+
+  it('embeds a TrueType font file that PDF viewers can read', async () => {
+    const pdf = await PDFDocument.load(await buildPdf([{ png: PNG_A, text: [text(0)] }], new Map([[FONT, fontBytes]])))
+    const [, descriptor] = pdf.context.enumerateIndirectObjects().find(([, o]) => o instanceof PDFDict && o.get(PDFName.of('Type'))?.toString() === '/FontDescriptor')!
+    const file = pdf.context.lookup((descriptor as PDFDict).get(PDFName.of('FontFile2'))) as PDFRawStream
+    // 0x00010000 is the TrueType magic; a raw WOFF2 starts with "wOF2" and makes viewers substitute a font.
+    expect([...decodePDFRawStream(file).decode().subarray(0, 4)]).toEqual([0, 1, 0, 0])
   })
 })
