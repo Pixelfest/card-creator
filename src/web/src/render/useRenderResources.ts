@@ -9,8 +9,8 @@ import { artworkKey, emojiKey, type ImageSource } from './renderCard'
 export type ImageRequest = { key: string; load: () => Promise<ImageSource> }
 
 /**
- * Every image a design draws, as (key, loader) pairs: the Frame and Snippet backgrounds by
- * asset path, the Artwork, and the Twemoji for emoji in snippet text. Assets the library does
+ * Every image a design draws, as (key, loader) pairs: the Frame, the corner icon and Snippet
+ * backgrounds by asset path, the Artwork, and the Twemoji for emoji in snippet text. Assets the library does
  * not have are left out: the renderer skips them and the Card shows a warning. The preview and
  * the export (#27) use the same list.
  */
@@ -26,8 +26,8 @@ export function imageRequests(
   }
   if (!manifest) return requests
 
-  const assetUrls = new Map([...manifest.frames, ...manifest.snippetBackgrounds].map((a) => [a.path, a.url]))
-  const paths = [design.frame, ...SNIPPET_SLOTS.map((slot) => design.snippets[slot]?.background)]
+  const assetUrls = new Map([...manifest.frames, ...manifest.snippetBackgrounds, ...manifest.icons].map((a) => [a.path, a.url]))
+  const paths = [design.frame, design.cornerIcons?.icon, ...SNIPPET_SLOTS.map((slot) => design.snippets[slot]?.background)]
   for (const path of new Set(paths)) {
     const url = path ? assetUrls.get(path) : undefined
     if (path && url) requests.push({ key: path, load: () => loadImage(url) })

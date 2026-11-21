@@ -4,6 +4,7 @@ import { useTextResources } from '../text/useTextResources'
 import * as actions from './actions'
 import { ArtworkProperties } from './ArtworkProperties'
 import { CardProperties } from './CardProperties'
+import { CornerIconProperties } from './CornerIconProperties'
 import { useEditor } from './editorHooks'
 import { FrameProperties } from './FrameProperties'
 import { SNIPPET_SLOTS, type SnippetSlot } from './model'
@@ -15,9 +16,10 @@ const PART_LABELS: Record<CardPart, string> = {
   card: 'Card',
   artwork: 'Artwork',
   frame: 'Frame',
+  cornerIcons: 'Corner icons',
   ...SLOT_LABELS,
 }
-const PARTS: CardPart[] = ['card', 'artwork', 'frame', ...SNIPPET_SLOTS]
+const PARTS: CardPart[] = ['card', 'artwork', 'frame', 'cornerIcons', ...SNIPPET_SLOTS]
 
 const isSlot = (part: CardPart): part is SnippetSlot => (SNIPPET_SLOTS as readonly string[]).includes(part)
 
@@ -77,6 +79,8 @@ export function PartsPanel() {
           <ArtworkProperties />
         ) : shown === 'frame' ? (
           <FrameProperties />
+        ) : shown === 'cornerIcons' ? (
+          <CornerIconProperties />
         ) : (
           <SnippetProperties slot={shown} />
         )}

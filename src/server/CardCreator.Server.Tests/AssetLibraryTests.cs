@@ -91,6 +91,21 @@ public sealed class AssetLibraryTests : IDisposable
     }
 
     [Fact]
+    public void Icons_are_listed_whatever_their_size_and_are_served_by_path()
+    {
+        Write("icons/star.png", Png(256, 256));
+        Write("icons/wide.png", Png(300, 150));
+        Write("icons/not-a-png.png", "nope"u8.ToArray());
+
+        var library = Scan();
+
+        Assert.Equal(["Star", "Wide"], library.Icons.Select(i => i.DisplayName).Order());
+        Assert.Equal(2.0, library.Icons.Single(i => i.Path == "icons/wide.png").AspectRatio);
+        var star = library.Icons.Single(i => i.Path == "icons/star.png");
+        Assert.Same(star, library.Find(star.Hash, star.Path));
+    }
+
+    [Fact]
     public void The_hashed_url_changes_when_the_file_changes()
     {
         Write("frames/44x72/gold.png", Png(520, 850, salt: 1));

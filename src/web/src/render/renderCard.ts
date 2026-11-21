@@ -5,6 +5,7 @@ import type { SnippetLayout } from '../text/layout'
 import { fontString } from '../text/measure'
 import type { TextResources } from '../text/textResources'
 import { artworkRect } from './artwork'
+import { cornerIconRects, cornerIconsOf } from './cornerIcons'
 import { CARD_HEIGHT, CARD_WIDTH, type RenderTarget } from './units'
 
 /** Decoded images by URL. Only same-origin URLs go in, so the canvas is never tainted. */
@@ -47,7 +48,7 @@ export type RenderContext = Pick<
 
 /**
  * Draws one Card. Draw order, bottom to top (docs/spec.md, section 6): fill colour, Artwork,
- * Frame, then the textbox, banner and header snippets. Everything is in card units.
+ * Frame, the corner icons, then the textbox, banner and header snippets. Everything is in card units.
  */
 export function renderCard(ctx: RenderContext, design: CardDesign, resources: RenderResources, target: RenderTarget): void {
   ctx.save()
@@ -65,6 +66,7 @@ export function renderCard(ctx: RenderContext, design: CardDesign, resources: Re
   drawFill(ctx, design)
   drawArtwork(ctx, design, resources)
   drawFrame(ctx, design, resources)
+  drawCornerIcons(ctx, design, resources)
   for (const slot of SNIPPET_DRAW_ORDER) drawSnippet(ctx, design, slot, resources, target.scale)
 
   ctx.restore()
@@ -100,6 +102,14 @@ function drawFrame(ctx: RenderContext, design: CardDesign, resources: RenderReso
   const image = design.frame ? resources.images.get(design.frame) : undefined
   // A missing Frame is skipped; the Card shows a warning instead (see warnings.ts).
   if (image) ctx.drawImage(image, 0, 0, CARD_WIDTH, CARD_HEIGHT)
+}
+
+function drawCornerIcons(ctx: RenderContext, design: CardDesign, resources: RenderResources) {
+  const settings = cornerIconsOf(design)
+  const image = settings.icon ? resources.images.get(settings.icon) : undefined
+  // A missing icon is skipped; the Card shows a warning instead (see warnings.ts).
+  if (!image) return
+  for (const r of cornerIconRects(settings, image.width / image.height)) ctx.drawImage(image, r.x, r.y, r.width, r.height)
 }
 
 /**
