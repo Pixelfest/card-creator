@@ -36,8 +36,8 @@ describe('cornerIconRects', () => {
     expect(cornerIconRects({ ...all, corners: [] }, 1)).toEqual([])
   })
 
-  it('clamps size to 2–15% and offsets to 0–20%', () => {
-    expect(cornerIconRects({ ...all, size: 99 }, 1)[0].width).toBeCloseTo(78)
+  it('clamps size to 2–40% and offsets to 0–20%', () => {
+    expect(cornerIconRects({ ...all, size: 99 }, 1)[0].width).toBeCloseTo(208)
     expect(cornerIconRects({ ...all, size: 0 }, 1)[0].width).toBeCloseTo(10.4)
     expect(cornerIconRects({ ...all, insetX: -5, insetY: -5 }, 1)[0]).toMatchObject({ x: 0, y: 0 })
   })
@@ -49,8 +49,8 @@ describe('cornerIconRects', () => {
 })
 
 describe('cornerIconsOf', () => {
-  it('gives an old Card (no field) the defaults: nothing drawn, 8% size, 4% offsets', () => {
+  it('gives an old Card (no field) the defaults: nothing drawn, 10% size, no offsets', () => {
     expect(cornerIconsOf({})).toBe(DEFAULT_CORNER_ICONS)
-    expect(DEFAULT_CORNER_ICONS).toEqual({ icon: null, corners: [], size: 8, insetY: 4, insetX: 4 })
+    expect(DEFAULT_CORNER_ICONS).toEqual({ icon: null, corners: [], size: 10, insetY: 0, insetX: 0 })
   })
 })

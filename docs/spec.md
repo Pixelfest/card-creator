@@ -110,8 +110,8 @@ Decided in [Canvas text rendering](https://github.com/Pixelfest/card-creator/iss
 - **Reset to cover** restores the initial fit.
 
 **Corner icons:** one icon from `assets/icons/`, drawn in any ticked combination of the four corners. They draw above the Artwork and Frame and below the snippets, clipped to the Card. Stored in the design as the optional `cornerIcons` field `{ icon, corners, size, insetY, insetX }`; a Card without it shows no corner icons.
-- **Size** is the icon's width as a percentage of the Card width, 2–15%, default 8%. The height follows the image's aspect ratio. The icon is anchored at its outer corner, so a bigger size grows towards the middle of the Card.
-- **Distances** from the top/bottom edge (percentage of Card height) and from the side edge (percentage of Card width), 0–20%, default 4% each, measured from the Card edge and mirrored per corner. The icon is never flipped or rotated.
+- **Size** is the icon's width as a percentage of the Card (frame) width, 2–40%, default 10%, independent of the image's own pixel size. The height follows the image's aspect ratio. The icon is anchored at its outer corner, so a bigger size grows towards the middle of the Card.
+- **Distances** from the top/bottom edge (percentage of Card height) and from the side edge (percentage of Card width), 0–20%, default 0% each (flush in the corner), measured from the Card edge and mirrored per corner. The icon is never flipped or rotated.
 - Size and distances are shared by every ticked corner, as is the icon. A missing icon is skipped and the Card gets a missing-asset warning (only while a corner is ticked).
 
 **Text snippets:** at most one per slot (`header`, `banner`, `textbox`).

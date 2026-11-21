@@ -18,7 +18,7 @@ export type CornerIcons = {
   icon: string | null
   /** The corners that show the icon, in any combination. */
   corners: Corner[]
-  /** Icon width as a percentage of the Card width, 2–15. */
+  /** Icon width as a percentage of the Card (frame) width, 2–40; not related to the image size. */
   size: number
   /** Distance from the top or bottom edge, as a percentage of the Card height, 0–20. */
   insetY: number
@@ -27,10 +27,10 @@ export type CornerIcons = {
 }
 
 export const MIN_ICON_SIZE = 2
-export const MAX_ICON_SIZE = 15
+export const MAX_ICON_SIZE = 40
 export const MAX_ICON_INSET = 20
 
-export const DEFAULT_CORNER_ICONS: CornerIcons = { icon: null, corners: [], size: 8, insetY: 4, insetX: 4 }
+export const DEFAULT_CORNER_ICONS: CornerIcons = { icon: null, corners: [], size: 10, insetY: 0, insetX: 0 }
 
 /** Old Cards have no corner icons; a missing value means the defaults (nothing drawn). */
 export function cornerIconsOf(design: { cornerIcons?: CornerIcons }): CornerIcons {
