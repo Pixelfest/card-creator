@@ -15,7 +15,7 @@ public class AssetEndpointTests(AppFactory factory)
     {
         var manifest = await Client.GetFromJsonAsync<AssetManifestDto>("/api/assets");
 
-        Assert.Contains(manifest!.Frames, f => f.Path == "frames/44x72/gold-border.png" && f.DisplayName == "Gold border");
+        Assert.Contains(manifest!.Frames, f => f.Path == "frames/44x72/wood-frame.png" && f.DisplayName == "Wood frame");
         Assert.All(manifest.Frames, f => Assert.Equal(44.0 / 72, f.AspectRatio!.Value, 2));
         Assert.Contains(manifest.Fonts, f => f.DisplayName == "Cinzel Bold");
         Assert.NotEmpty(manifest.SnippetBackgrounds);
