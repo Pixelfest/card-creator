@@ -6,6 +6,8 @@
 - **Crimson Pro** (Regular, Bold) by the Crimson Pro Project Authors, licensed under the [SIL Open Font License 1.1](https://openfontlicense.org). Licence text: `fonts/OFL-CrimsonPro.txt`. Source: [github.com/Fonthausen/CrimsonPro](https://github.com/Fonthausen/CrimsonPro), Latin subset via Fontsource.
 - **Oranienbaum** (Regular) by Oleg Pospelov and Jovanny Lemonad, licensed under the [SIL Open Font License 1.1](https://openfontlicense.org) with Reserved Font Name “Oranienbaum”. Licence text: `fonts/OFL-Oranienbaum.txt`. Latin subset via Fontsource.
 
+Each `.ttf` is the same font as its `.woff2`, decompressed unchanged, for embedding in PDF exports.
+
 ## Frames and Snippet backgrounds
 
 - **Gold border**, **Silver simple**, **Parchment scroll** and **Dark plate** were made for Card Creator and are licensed with this repository.

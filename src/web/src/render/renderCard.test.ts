@@ -4,7 +4,7 @@ import { newSnippet } from '../editor/snippets'
 import type { Measurer } from '../text/layout'
 import { createTextResources } from '../text/textResources'
 import { coverPlacement } from './artwork'
-import { artworkKey, renderCard, SNIPPET_DRAW_ORDER, type ImageSource, type RenderContext } from './renderCard'
+import { artworkKey, renderCard, snippetText, SNIPPET_DRAW_ORDER, type ImageSource, type RenderContext } from './renderCard'
 import { previewTarget } from './units'
 
 /** Records what the renderer asks the canvas to do. */
@@ -132,6 +132,36 @@ describe('renderCard', () => {
     expect(ops).toContain(`lineWidth=${headerSize * 0.12 * 2}`)
     expect(ops).toContain(`font=${headerSize}px "fam-a"`)
     expect(calls.filter((c) => c.startsWith('strokeText(T'))).toHaveLength(0)
+  })
+
+  it('leaves vector-text snippets out of the image but keeps their background, and hands back the same runs', () => {
+    const { ctx, calls } = recorder()
+    const measurer: Measurer = { width: (t, _f, size) => t.length * size * 0.5, metrics: () => ({ ascent: 0.8, descent: 0.2 }) }
+    const text = createTextResources({ families: new Map([['fonts/A.woff2', 'fam-a']]), failed: new Set() }, measurer, undefined)
+    const banner = { width: 100, height: 20, toString: () => 'bannerImage' } as unknown as ImageSource
+    const withText: CardDesign = {
+      ...design,
+      snippets: {
+        banner: { ...newSnippet('banner', 'fonts/A.woff2'), text: 'B', outline: true, background: 'bg/banner.png' },
+        textbox: { ...newSnippet('textbox', 'fonts/A.woff2'), text: 'T' },
+      },
+    }
+
+    renderCard(
+      ctx,
+      withText,
+      { images: new Map([['frames/44x72/gold.png', frame], ['bg/banner.png', banner]]), text, vectorText: new Set(['banner']) },
+      previewTarget(260, 1),
+    )
+
+    expect(calls.some((c) => c.startsWith('drawImage(bannerImage'))).toBe(true)
+    expect(calls.filter((c) => /^(fill|stroke)Text\(B/.test(c))).toHaveLength(0)
+    expect(calls.some((c) => c.startsWith('fillText(T'))).toBe(true)
+
+    const vector = snippetText(withText, 'banner', text)!
+    const layout = text.layout(withText.snippets.banner!)
+    expect(vector).toMatchObject({ font: 'fonts/A.woff2', fontSize: layout.fontSize, outlineWidth: layout.outlineWidth })
+    expect(vector.runs).toEqual([{ text: 'B', x: layout.lines[0].x, baseline: layout.lines[0].baseline }])
   })
 
   it('draws the snippet slots bottom to top: textbox, banner, header', () => {

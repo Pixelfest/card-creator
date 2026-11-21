@@ -10,11 +10,11 @@ import { wrapText } from './wrap'
 
 export const LINE_HEIGHT = 1.2
 /** Horizontal padding, as a share of the box width. */
-export const PADDING_X = 0.08
+export const PADDING_X = 0.05
 /** Vertical padding above and below the text, as a share of the font size. */
-export const PADDING_Y = 0.3
+export const PADDING_Y = 0.2
 /** With a Snippet background, the padding is a share of the box height instead. */
-export const BACKGROUND_PADDING_Y = 0.12
+export const BACKGROUND_PADDING_Y = 0.08
 /** Auto-shrink goes down to half the chosen size. */
 export const MIN_SHRINK = 0.5
 const SHRINK_STEP = 0.025

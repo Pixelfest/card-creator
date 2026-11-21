@@ -17,6 +17,11 @@ export type RenderResources = {
   images: ReadonlyMap<string, ImageSource>
   /** Fonts and layout for Text snippets; snippets are skipped without it. */
   text?: TextResources
+  /**
+   * Snippets whose text the caller draws itself (the PDF export draws it as vector text).
+   * Their background and emoji images are still drawn; only the text runs are left out.
+   */
+  vectorText?: ReadonlySet<SnippetSlot>
 }
 
 /** The slice of CanvasRenderingContext2D the renderer uses; tests pass a recorder. */
@@ -140,7 +145,10 @@ function drawSnippet(ctx: RenderContext, design: CardDesign, slot: SnippetSlot, 
   ctx.lineCap = 'round'
   ctx.lineWidth = layout.outlineWidth * 2
 
-  const runs = layout.lines.flatMap((line) => placeRuns(line, layout, family, text, resources.images))
+  const vector = resources.vectorText?.has(slot) ?? false
+  const runs = layout.lines
+    .flatMap((line) => placeRuns(line, layout, family, text, resources.images))
+    .filter((run) => !(vector && run.kind === 'text'))
   if (layout.outlineWidth > 0) {
     for (const run of runs) {
       if (run.kind === 'text') ctx.strokeText(run.text, run.x, run.baseline)
@@ -154,6 +162,40 @@ function drawSnippet(ctx: RenderContext, design: CardDesign, slot: SnippetSlot, 
     else ctx.fillText(run.text, run.x, run.baseline)
   }
   ctx.restore()
+}
+
+/** One snippet's text runs, positioned in card units, for drawing as vector text. */
+export type SnippetText = {
+  /** The font's asset path. */
+  font: string
+  fontSize: number
+  color: string
+  outlineColor: string
+  /** 0 without an outline; drawn as a stroke twice this wide, under the fill. */
+  outlineWidth: number
+  runs: { text: string; x: number; baseline: number }[]
+}
+
+/**
+ * The text runs `renderCard` leaves out for a slot in `vectorText`: same layout, same
+ * positions. Emoji are not included (they stay images). Undefined without a snippet or font.
+ */
+export function snippetText(design: CardDesign, slot: SnippetSlot, text: TextResources): SnippetText | undefined {
+  const snippet = design.snippets[slot]
+  if (!snippet?.font) return undefined
+  const layout = text.layout(snippet)
+  const family = text.family(snippet.font)
+  const runs = layout.lines
+    .flatMap((line) => placeRuns(line, layout, family, text, new Map()))
+    .flatMap((run) => (run.kind === 'text' ? [{ text: run.text, x: run.x, baseline: run.baseline }] : []))
+  return {
+    font: snippet.font,
+    fontSize: layout.fontSize,
+    color: snippet.color,
+    outlineColor: snippet.outlineColor,
+    outlineWidth: layout.outlineWidth,
+    runs,
+  }
 }
 
 type PlacedRun =

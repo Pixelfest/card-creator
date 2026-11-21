@@ -4,7 +4,7 @@ using CardCreator.Server.Ids;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Net.Http.Headers;
-using SixLabors.ImageSharp;
+using NetVips;
 
 namespace CardCreator.Server.Artwork;
 
@@ -98,7 +98,7 @@ public static class ArtworkEndpoints
         {
             processed = ArtworkProcessor.Process(bytes, format);
         }
-        catch (Exception e) when (e is InvalidImageContentException or UnknownImageFormatException or ImageFormatException)
+        catch (VipsException e)
         {
             logger.LogInformation(e, "Rejected an unreadable {Format} upload", format);
             return Invalid("The image could not be read. It may be damaged.");

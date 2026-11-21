@@ -1,6 +1,9 @@
 // Card units (docs/spec.md, section 6). The renderer draws everything in one coordinate space,
 // the 300 DPI export size of a 44×72 mm Card, and one scale factor maps it to pixels.
 
+/** The Card Format's size in mm: the Card's ratio, and its default printed size. */
+export const CARD_MM = { width: 44, height: 72 }
+
 /** 44 mm at 300 DPI is 519.7 px; rounded to whole pixels. */
 export const CARD_WIDTH = 520
 /** 72 mm at 300 DPI is 850.4 px; rounded to whole pixels. */
@@ -18,6 +21,11 @@ export function ptToUnits(pt: number): number {
 
 /** A canvas size in device pixels and the scale from card units to those pixels. */
 export type RenderTarget = { width: number; height: number; scale: number }
+
+/** White border added around a Card in the print PNG, so there is room to cut: 2 mm. */
+export const CUT_BORDER_MM = 2
+/** 2 mm at 300 DPI is 23.6 px; rounded to whole pixels. */
+export const CUT_BORDER_PX = Math.round((CUT_BORDER_MM / 25.4) * EXPORT_DPI)
 
 /** The export renders at exactly 520×850 and ignores devicePixelRatio. */
 export const EXPORT_TARGET: RenderTarget = { width: CARD_WIDTH, height: CARD_HEIGHT, scale: 1 }

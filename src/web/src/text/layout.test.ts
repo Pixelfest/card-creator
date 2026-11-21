@@ -25,7 +25,7 @@ describe('the box model', () => {
     expect(layout.box.height).toBeCloseTo(size * LINE_HEIGHT + size * PADDING_Y * 2)
   })
 
-  it('aligns lines left, centre and right inside 8% padding', () => {
+  it('aligns lines left, centre and right inside 5% padding', () => {
     const base = { text: 'Hi', zoom: 100, position: 50, size: 10 }
     const width = measurer.width('Hi', 'f', ptToUnits(10))
     const pad = 520 * PADDING_X
@@ -48,7 +48,7 @@ describe('the box model', () => {
   })
 
   it('wraps at the padded box width', () => {
-    // Inner width: 520 × 0.5 × 0.84 = 218.4 units; at 10 pt a character is 20.8 units → 10 per line.
+    // Inner width: 520 × 0.5 × 0.9 = 234 units; at 10 pt a character is 20.8 units → 11 per line.
     const layout = layoutSnippet(snippet({ text: 'aaaa bbbb cccc', zoom: 50, size: 10, position: 50 }), 'f', measurer)
     expect(layout.lines.map((l) => l.text)).toEqual(['aaaa bbbb', 'cccc'])
   })
