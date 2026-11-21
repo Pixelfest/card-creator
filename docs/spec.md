@@ -121,7 +121,7 @@ Decided in [Canvas text rendering](https://github.com/Pixelfest/card-creator/iss
 - Inside the box: horizontal padding of 8% of box width, the text block vertically centred, line height 1.2, and left/centre/right alignment.
 - Text size is in pt (5–36). Defaults: textbox 9 pt, header and banner 12 pt.
 - **Overflow:** text that doesn't fit auto-shrinks to as little as 50% of its size. Past that it overflows and the snippet gets a "text doesn't fit" warning.
-- **Outline:** on or off, with a colour. Its width is automatic (about 12% of font size). Draw it with `strokeText` (`lineWidth = 2 × outline`, `lineJoin = "round"`), then `fillText`.
+- **Outline:** on or off, with a colour and a thickness (2–30% of the font size, default 12%). Draw it with `strokeText` (`lineWidth = 2 × outline`, `lineJoin = "round"`), then `fillText`.
 - **Slot defaults when added:** header 6% / 80%, banner 16% / 90%, textbox 80% / 85% (vertical centre / zoom).
 - **Fonts:** load every font with `FontFace` → `document.fonts.add` → `await load()` before rendering or exporting. A font that fails to load is reported, never drawn silently in the fallback.
 - **Wrapping:** a custom greedy wrapper. Split on `\n`, measure with `measureText`, and use `Intl.Segmenter` for word and grapheme breaks.
@@ -145,7 +145,7 @@ Decided in [Editor and Collection UI](https://github.com/Pixelfest/card-creator/
   - **Artwork:** upload, zoom, pan X/Y, fill colour, reset to cover.
   - **Frame:** visual tiles, plus a warning if the Frame is missing.
   - **Corner icons:** icon tiles (plus None), a tick box per corner, and size and distance sliders, each with a number box. Sliders preview while held and save on release; there is no drag on the card.
-  - **Snippet:** text, font (each previewed in itself), size, colour, outline on/off + colour, alignment, background, vertical position, zoom, remove, and the doesn't-fit warning.
+  - **Snippet:** text, font (each previewed in itself), size, colour, outline on/off + colour + thickness, alignment, background, vertical position, zoom, remove, and the doesn't-fit warning.
 
 ## 8. Saving, undo and redo
 

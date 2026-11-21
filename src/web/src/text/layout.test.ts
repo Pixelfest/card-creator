@@ -60,6 +60,11 @@ describe('the box model', () => {
     expect(off.outlineWidth).toBe(0)
   })
 
+  it('uses the chosen outline thickness as a share of the size', () => {
+    const thick = layoutSnippet(snippet({ outline: true, size: 10, outlineThickness: 25 }), 'f', measurer)
+    expect(thick.outlineWidth).toBeCloseTo(ptToUnits(10) * 0.25)
+  })
+
   it('hit-tests its box', () => {
     const layout = layoutSnippet(snippet({ text: 'Hi', zoom: 50, position: 50 }), 'f', measurer)
     expect(hitsBox(layout, 260, 425)).toBe(true)

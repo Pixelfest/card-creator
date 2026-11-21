@@ -16,6 +16,8 @@ export type Snippet = {
   color: string
   outline: boolean
   outlineColor: string
+  /** Outline width as a % of the font size, 2–30. Optional: older snippets use the default (12%). */
+  outlineThickness?: number
   align: 'left' | 'center' | 'right'
   /** Vertical centre of the box, 0–100% of the Card height. */
   position: number

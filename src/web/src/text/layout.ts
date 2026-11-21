@@ -1,6 +1,7 @@
 import type { Snippet } from '../editor/model'
 import type { Rect } from '../render/artwork'
 import { CARD_HEIGHT, CARD_WIDTH, ptToUnits } from '../render/units'
+import { DEFAULT_OUTLINE_THICKNESS } from '../editor/snippets'
 import { wrapText } from './wrap'
 
 // The Text snippet box model (docs/spec.md, section 6), as pure functions in card units. The
@@ -17,8 +18,8 @@ export const BACKGROUND_PADDING_Y = 0.12
 /** Auto-shrink goes down to half the chosen size. */
 export const MIN_SHRINK = 0.5
 const SHRINK_STEP = 0.025
-/** The outline is drawn with strokeText at about 12% of the font size. */
-export const OUTLINE_SHARE = 0.12
+/** The outline is drawn with strokeText at the snippet's thickness, by default 12% of the font size. */
+export const OUTLINE_SHARE = DEFAULT_OUTLINE_THICKNESS / 100
 
 /** Measures text in card units. Ascent and descent are fractions of the font size. */
 export type Measurer = {
@@ -114,7 +115,7 @@ function layoutAt(
     lines: laidOut,
     fits: fitsHeight && !brokeWord,
     shrunk: false,
-    outlineWidth: snippet.outline ? fontSize * OUTLINE_SHARE : 0,
+    outlineWidth: snippet.outline ? (fontSize * (snippet.outlineThickness ?? DEFAULT_OUTLINE_THICKNESS)) / 100 : 0,
   }
 }
 
