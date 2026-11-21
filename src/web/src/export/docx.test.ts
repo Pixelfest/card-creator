@@ -2,6 +2,7 @@ import { Packer } from 'docx'
 import { strFromU8, unzipSync } from 'fflate'
 import { describe, expect, it } from 'vitest'
 import { buildDocument } from './docx'
+import { printLayout, type PrintLayout } from './layout'
 
 // A valid 1×1 PNG; two that differ in one byte of pixel data (and so in their CRC).
 const PNG_A = Uint8Array.from(
@@ -13,8 +14,8 @@ const PNG_B = Uint8Array.from(
   (c) => c.charCodeAt(0),
 )
 
-async function unpack(images: Uint8Array[]) {
-  const zip = unzipSync(new Uint8Array(await Packer.toArrayBuffer(buildDocument(images))))
+async function unpack(images: Uint8Array[], layout?: PrintLayout) {
+  const zip = unzipSync(new Uint8Array(await Packer.toArrayBuffer(buildDocument(images, layout))))
   return { xml: strFromU8(zip['word/document.xml']), media: Object.keys(zip).filter((k) => k.startsWith('word/media/')) }
 }
 
@@ -49,6 +50,19 @@ describe('buildDocument', () => {
     // Three card cells with four borders each; empty cells and spacers have none.
     expect(count(xml, /<w:(top|bottom|left|right) w:val="single" w:color="000000" w:sz="2"\/>/g)).toBe(12)
     expect(xml).toMatch(/<w:tblCellMar><w:top w:type="dxa" w:w="0"\/><w:left w:type="dxa" w:w="0"\/><w:bottom w:type="dxa" w:w="0"\/><w:right w:type="dxa" w:w="0"\/><\/w:tblCellMar>/)
+  })
+
+  it('follows the layout: a 4 × 2 table of 61 × 97.3 mm cards on A4 landscape', async () => {
+    const { xml } = await unpack(Array(9).fill(PNG_A), printLayout(57))
+
+    expect(xml).toMatch(/<w:pgSz w:w="16838" w:h="11906" w:orient="landscape"/)
+    expect(count(xml, /<w:tbl>/g)).toBe(2)
+    expect(xml).toContain(
+      '<w:tblGrid><w:gridCol w:w="3459"/><w:gridCol w:w="114"/><w:gridCol w:w="3459"/><w:gridCol w:w="114"/><w:gridCol w:w="3459"/><w:gridCol w:w="114"/><w:gridCol w:w="3459"/></w:tblGrid>',
+    )
+    // Per page: 2 card rows and 1 spacer row.
+    expect(count(xml, /<w:trHeight w:val="5515" w:hRule="exact"\/>/g)).toBe(4)
+    expect(count(xml, /<wp:extent cx="2196000" cy="3501818"\/>/g)).toBe(9)
   })
 
   it('stores an image used for several Copies once', async () => {

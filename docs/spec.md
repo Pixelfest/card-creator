@@ -188,27 +188,33 @@ Decided in [Export details](https://github.com/Pixelfest/card-creator/issues/10)
 
 **Generation:** in the browser: PDF with the `pdf-lib` npm package, Word with the `docx` npm package (`Packer.toBlob`). Both load on first export and share the rendering and the layout.
 
+**Print size**
+- The Cards print at a chosen width, 25–120 mm (default 44 mm). The height follows from the Card Format's 44:72 ratio, so the design is scaled, never stretched.
+- The printed card is the Card plus a 2 mm white cut border; cards are 2 mm apart.
+- The grid is the one that fits the most cards on A4 within 5 mm minimum page margins, in portrait or landscape (portrait wins a tie). At 44 mm that is 4 × 3 portrait; at 57 mm, 4 × 2 landscape.
+
 **Layout**
-- A4 portrait with one fixed-layout table per page: 4 × 3 cells of 48×76 mm with 2 mm spacer columns and rows. The grid is centred (about 6 mm side margins and 32.5 mm top/bottom).
-- Rows use `hRule=exact`. Cell margins are 0. Each card cell holds an inline image that fills it: the 44×72 mm Card plus a 2 mm white cut border (24 px at 300 DPI) rendered into the PNG.
+- One fixed-layout table per page: a grid of cells the printed card size with 2 mm spacer columns and rows, centred on the page. At 44 mm: 4 × 3 cells of 48×76 mm, about 6 mm side margins and 32.5 mm top/bottom. A landscape page is A4 with `orient="landscape"`.
+- Rows use `hRule=exact`. Cell margins are 0. Each card cell holds an inline image that fills it: the Card plus its 2 mm white cut border rendered into the PNG.
 - Size images in unrounded px at 96 dpi (`mm/25.4*96`). Round twips up.
 - **Cut lines:** card-cell borders, single, `sz=2` (¼ pt), black.
 
 **PDF**
-- The same A4 grid, with each 48×76 mm image drawn at its slot and a ¼ pt black rectangle on its edge as the cut line.
+- The same grid and page orientation, with each card image drawn at its slot and a ¼ pt black rectangle on its edge as the cut line.
 - Each unique image is embedded once and drawn for every Copy.
 - Snippet text is not in the PDF's card image: it is drawn on top as real text in the snippet's embedded font (whole font files, via `@pdf-lib/fontkit`), at the same positions as the canvas layout, clipped to the Card, so it prints sharp. Outlines are a stroke at twice the outline width with round joins, drawn before the fill, as on the canvas. Snippet backgrounds and emoji stay in the image. A snippet on the fallback font (its font missing or failed), or on a font with no `.ttf`/`.otf` file, stays in the image too. Because the image is underneath, a snippet's text is drawn above every snippet background, even one that is higher in the draw order.
 
 **Content**
-- Each Card renders once as a 300 DPI PNG (568×898 px including the cut border) and the buffer is reused for its Copies, so `docx` stores each unique image once.
+- Each Card renders once as a PNG of at least 300 DPI: 520×850 px, scaled up for Cards wider than 44 mm, plus the cut border (568×898 px in all at 44 mm). The buffer is reused for its Copies, so `docx` stores each unique image once.
 - Cards appear in card-list order, with each Card's Copies consecutive. Copies 0 is excluded.
 
 **Dialog**
 1. A format choice: **PDF (.pdf)** (the default) or **Word (.docx)**.
-2. A checkbox per Card, all checked by default. Copies-0 Cards are unchecked and disabled. A running total of cards and pages.
-3. Warnings (missing assets, text that doesn't fit) for the selected Cards, with **Export anyway**.
-4. The reminder "Print at 100% / Actual size: don't use Fit to page".
-5. A progress bar, then the download `{Set name}.pdf` or `{Set name}.docx`.
+2. A checkbox per Card, all checked by default. Copies-0 Cards are unchecked and disabled.
+3. The Card width in mm, with the resulting height, the cards per page and the orientation, and a reset to 44 mm. The last width used is remembered in this browser. An empty or out-of-range width blocks the export. A running total of cards and pages.
+4. Warnings (missing assets, text that doesn't fit) for the selected Cards, with **Export anyway**.
+5. The reminder "Print at 100% / Actual size: don't use Fit to page".
+6. A progress bar, then the download `{Set name}.pdf` or `{Set name}.docx`.
 
 ## 11. Errors and offline
 

@@ -1,6 +1,9 @@
 // Card units (docs/spec.md, section 6). The renderer draws everything in one coordinate space,
 // the 300 DPI export size of a 44×72 mm Card, and one scale factor maps it to pixels.
 
+/** The Card Format's size in mm: the Card's ratio, and its default printed size. */
+export const CARD_MM = { width: 44, height: 72 }
+
 /** 44 mm at 300 DPI is 519.7 px; rounded to whole pixels. */
 export const CARD_WIDTH = 520
 /** 72 mm at 300 DPI is 850.4 px; rounded to whole pixels. */

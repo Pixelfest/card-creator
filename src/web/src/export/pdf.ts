@@ -29,15 +29,15 @@ import {
   type PDFPage,
   type RGB,
 } from 'pdf-lib'
-import { PRINT_SIZE } from '../render/exportCard'
+import { printImage, type PrintImage } from '../render/exportCard'
 import type { SnippetText } from '../render/renderCard'
-import { CARD_HEIGHT, CARD_WIDTH, CUT_BORDER_PX } from '../render/units'
-import { A4_MM, PRINT_MM, paginate, slotOriginMm } from './layout'
+import { CARD_HEIGHT, CARD_WIDTH } from '../render/units'
+import { paginate, printLayout, slotOriginMm, type PrintLayout } from './layout'
 import { renderPrintCards, type ExportInput, type PrintCard } from './render'
 
 // Builds the .pdf (docs/spec.md, section 10): the same A4 grid as the Word export, with each
-// 48×76 mm card image (Card plus its white cut border) drawn at its slot and a ¼ pt black cut
-// line on its edge. Snippet text is drawn over the image as real text in the embedded font,
+// card image (Card plus its white cut border) drawn at its slot and a ¼ pt black cut line on
+// its edge. Snippet text is drawn over the image as real text in the embedded font,
 // so it prints sharp instead of at the image's 300 DPI.
 
 /** Points (1/72 in), PDF's unit. */
@@ -60,11 +60,12 @@ export function hexToRgb(hex: string): RGB {
 /**
  * The PDF bytes for a list of printed cards. Pass the same PrintCard for every Copy of a Card:
  * its image is embedded once and drawn for each Copy. `fonts` holds the font file for every
- * font path the cards' text uses.
+ * font path the cards' text uses. The images are the layout's `printImage` size.
  */
 export async function buildPdf(
   cards: readonly PrintCard[],
   fonts: ReadonlyMap<string, Uint8Array> = new Map(),
+  layout: PrintLayout = printLayout(),
 ): Promise<Uint8Array> {
   const pdf = await PDFDocument.create()
   pdf.registerFontkit(fontkit)
@@ -83,10 +84,11 @@ export async function buildPdf(
     }
     return font
   }
-  const page = { width: mmToPt(A4_MM.width), height: mmToPt(A4_MM.height) }
-  const size = { width: mmToPt(PRINT_MM.width), height: mmToPt(PRINT_MM.height) }
+  const page = { width: mmToPt(layout.pageMm.width), height: mmToPt(layout.pageMm.height) }
+  const size = { width: mmToPt(layout.printMm.width), height: mmToPt(layout.printMm.height) }
+  const pixels = printImage(layout.cardMm.width)
 
-  for (const pageCards of paginate(cards)) {
+  for (const pageCards of paginate(cards, layout.perPage)) {
     const pdfPage = pdf.addPage([page.width, page.height])
     // Each font is added to the page's resources once, however many snippets use it.
     const fontKeys = new Map<PDFFont, PDFName>()
@@ -102,11 +104,11 @@ export async function buildPdf(
         image = await pdf.embedPng(card.png)
         embedded.set(card.png, image)
       }
-      const origin = slotOriginMm(slot)
+      const origin = slotOriginMm(layout, slot)
       // PDF measures y up from the bottom of the page.
       const rect = { x: mmToPt(origin.x), y: page.height - mmToPt(origin.y) - size.height, ...size }
       pdfPage.drawImage(image, rect)
-      if (card.text.length) await drawText(pdfPage, rect, card.text, fontKey)
+      if (card.text.length) await drawText(pdfPage, rect, pixels, card.text, fontKey)
       pdfPage.drawRectangle({ ...rect, borderColor: rgb(0, 0, 0), borderWidth: CUT_LINE_PT })
     }
   }
@@ -123,10 +125,13 @@ export async function buildPdf(
 async function drawText(
   page: PDFPage,
   rect: { x: number; y: number; width: number; height: number },
+  image: PrintImage,
   snippets: readonly SnippetText[],
   fontKey: (path: string) => Promise<{ font: PDFFont; key: PDFName }>,
 ) {
-  const scale = rect.width / PRINT_SIZE.width
+  // Points per image pixel, and per card unit (the Card renders at `target.scale` px per unit).
+  const perPixel = rect.width / image.width
+  const scale = perPixel * image.target.scale
   const ops: PDFOperator[] = [
     pushGraphicsState(),
     concatTransformationMatrix(
@@ -134,8 +139,8 @@ async function drawText(
       0,
       0,
       -scale,
-      rect.x + CUT_BORDER_PX * scale,
-      rect.y + rect.height - CUT_BORDER_PX * scale,
+      rect.x + image.border * perPixel,
+      rect.y + rect.height - image.border * perPixel,
     ),
     rectangle(0, 0, CARD_WIDTH, CARD_HEIGHT),
     clip(),
@@ -186,7 +191,7 @@ async function loadFontFiles(cards: readonly PrintCard[], input: ExportInput): P
 /** Renders the selected Cards and builds `{Set name}.pdf` from them. */
 export async function exportPdf(input: ExportInput): Promise<Blob> {
   return renderPrintCards(input, true, async (cards) => {
-    const bytes = await buildPdf(cards, await loadFontFiles(cards, input))
+    const bytes = await buildPdf(cards, await loadFontFiles(cards, input), input.layout)
     return new Blob([bytes as Uint8Array<ArrayBuffer>], { type: 'application/pdf' })
   })
 }

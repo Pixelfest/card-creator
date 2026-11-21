@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { PDFArray, PDFDict, PDFDocument, PDFName, type PDFRawStream, decodePDFRawStream } from 'pdf-lib'
 import { describe, expect, it } from 'vitest'
+import { printLayout } from './layout'
 import { buildPdf, hexToRgb, mmToPt } from './pdf'
 
 // A valid 1×1 PNG; two that differ in one byte of pixel data (and so in their CRC).
@@ -42,6 +43,15 @@ describe('buildPdf', () => {
       expect(page.getWidth()).toBeCloseTo(595.28, 2)
       expect(page.getHeight()).toBeCloseTo(841.89, 2)
     }
+  })
+
+  it('follows the layout: 8 cards of 57 mm on each A4 landscape page', async () => {
+    const pdf = await PDFDocument.load(
+      await buildPdf(Array(9).fill({ png: PNG_A, text: [] }), new Map(), printLayout(57)),
+    )
+    expect(pdf.getPageCount()).toBe(2)
+    expect(pdf.getPages()[0].getWidth()).toBeCloseTo(841.89, 2)
+    expect(pdf.getPages()[0].getHeight()).toBeCloseTo(595.28, 2)
   })
 
   it('embeds an image used for several Copies once', async () => {
