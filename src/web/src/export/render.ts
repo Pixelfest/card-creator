@@ -1,13 +1,18 @@
 import type { AssetManifest } from '../assets/api'
 import type { Card } from '../editor/model'
 import { renderCardToPng } from '../render/exportCard'
-import { emojiKey, type ImageSource } from '../render/renderCard'
+import { SNIPPET_DRAW_ORDER } from '../editor/snippets'
+import type { SnippetSlot } from '../editor/model'
+import { emojiKey, snippetText, type ImageSource, type SnippetText } from '../render/renderCard'
 import { imageRequests } from '../render/useRenderResources'
 import type { TextResources } from '../text/textResources'
 import { expandCopies } from './layout'
 
 // The part of export shared by Word and PDF: render each selected Card once, then hand the
 // printed list (each Card's Copies consecutive) to the format's builder.
+
+/** One rendered Card: its print PNG, plus the text drawn over it as vector text (PDF only). */
+export type PrintCard = { png: Uint8Array; text: SnippetText[] }
 
 export type ExportProgress = { done: number; total: number }
 
@@ -21,20 +26,32 @@ export type ExportInput = {
 }
 
 /**
+ * Renders each selected Card once to its PNG for the Word export (text included in the image).
+ */
+export async function renderPrintImages<T>(input: ExportInput, build: (images: Uint8Array[]) => Promise<T>): Promise<T> {
+  return renderPrintCards(input, false, (cards) => build(cards.map((card) => card.png)))
+}
+
+/**
  * Renders each selected Card once to a 568×898 PNG (520×850 plus the cut border), after
  * loading every image it needs, and passes `build` one entry per printed card: the same
- * Uint8Array for every Copy, in card-list order. An image that fails to load fails the export
+ * PrintCard for every Copy, in card-list order. An image that fails to load fails the export
  * (it would be silently missing from the print), except an emoji, which falls back to text
  * exactly as in the editor. Building counts as the last progress step.
+ *
+ * With `vectorText`, every snippet whose font loaded is left out of the PNG and returned as
+ * text runs instead, for the PDF to draw as real text. A snippet on the fallback font (its font
+ * missing or failed) stays in the image, since there is no font file to embed.
  */
-export async function renderPrintImages<T>(
+export async function renderPrintCards<T>(
   { cards, selected, manifest, text, artworkUrl, onProgress }: ExportInput,
-  build: (images: Uint8Array[]) => Promise<T>,
+  vectorText: boolean,
+  build: (cards: PrintCard[]) => Promise<T>,
 ): Promise<T> {
   const unique = cards.filter((card) => selected.has(card.id) && card.copies > 0)
   const total = unique.length + 1
   const loaded = new Map<string, Promise<ImageSource | undefined>>()
-  const pngs = new Map<string, Uint8Array>()
+  const printed = new Map<string, PrintCard>()
 
   onProgress?.({ done: 0, total })
   for (const [i, card] of unique.entries()) {
@@ -57,12 +74,24 @@ export async function renderPrintImages<T>(
       }
       if (image) images.set(key, image)
     }
-    const blob = await renderCardToPng(card.design, { images, text })
-    pngs.set(card.id, new Uint8Array(await blob.arrayBuffer()))
+    const vector = new Set<SnippetSlot>()
+    const runs: SnippetText[] = []
+    if (vectorText) {
+      for (const slot of SNIPPET_DRAW_ORDER) {
+        const font = card.design.snippets[slot]?.font
+        if (!font || !text.fonts.families.has(font)) continue
+        const placed = snippetText(card.design, slot, text)
+        if (!placed) continue
+        vector.add(slot)
+        runs.push(placed)
+      }
+    }
+    const blob = await renderCardToPng(card.design, { images, text, vectorText: vector })
+    printed.set(card.id, { png: new Uint8Array(await blob.arrayBuffer()), text: runs })
     onProgress?.({ done: i + 1, total })
   }
 
-  const result = await build(expandCopies(unique).map((card) => pngs.get(card.id)!))
+  const result = await build(expandCopies(unique).map((card) => printed.get(card.id)!))
   onProgress?.({ done: total, total })
   return result
 }
