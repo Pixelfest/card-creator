@@ -50,6 +50,8 @@
   --radius: 6px; /* buttons, callouts */
   --radius-lg: 10px; /* panels, dialogs */
 
+  --page-width: 64rem; /* Home, Collection, Credits */
+
   font-family: system-ui, sans-serif;
   color: var(--text);
   background: var(--bg);

@@ -63,7 +63,7 @@ describe('SetEditorPage', () => {
     renderWithQuery(<SetEditorPage collectionId={collectionId} setId={setId} />)
 
     expect(await screen.findByLabelText('Set name')).toHaveValue('Dragon Deck')
-    expect(await screen.findByRole('link', { name: '← Dragon Game' })).toHaveAttribute('href', `/c/${collectionId}`)
+    expect(await screen.findByRole('link', { name: 'Dragon Game' })).toHaveAttribute('href', `/c/${collectionId}`)
     const list = await screen.findByRole('list', { name: 'Cards' })
     expect(within(list).getAllByRole('listitem').map((li) => li.textContent)).toEqual([
       expect.stringContaining('Dragon'),
