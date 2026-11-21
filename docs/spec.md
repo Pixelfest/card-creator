@@ -197,6 +197,7 @@ Decided in [Export details](https://github.com/Pixelfest/card-creator/issues/10)
 **PDF**
 - The same A4 grid, with each 48×76 mm image drawn at its slot and a ¼ pt black rectangle on its edge as the cut line.
 - Each unique image is embedded once and drawn for every Copy.
+- Snippet text is not in the PDF's card image: it is drawn on top as real text in the snippet's embedded font (whole font files, via `@pdf-lib/fontkit`), at the same positions as the canvas layout, clipped to the Card, so it prints sharp. Outlines are a stroke at twice the outline width with round joins, drawn before the fill, as on the canvas. Snippet backgrounds and emoji stay in the image. A snippet on the fallback font (its font missing or failed) stays in the image too. Because the image is underneath, a snippet's text is drawn above every snippet background, even one that is higher in the draw order.
 
 **Content**
 - Each Card renders once as a 300 DPI PNG (568×898 px including the cut border) and the buffer is reused for its Copies, so `docx` stores each unique image once.
