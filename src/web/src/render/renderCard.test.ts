@@ -46,6 +46,35 @@ describe('renderCard', () => {
     ])
   })
 
+  it('draws the corner icons above the Frame, with the icon aspect ratio kept', () => {
+    const { ctx, calls } = recorder()
+    const star = { width: 200, height: 100, toString: () => 'starImage' } as unknown as ImageSource
+    const withIcons: CardDesign = {
+      ...design,
+      cornerIcons: { icon: 'icons/star.png', corners: ['topLeft', 'bottomRight'], size: 10, insetY: 5, insetX: 4 },
+    }
+
+    renderCard(ctx, withIcons, { images: new Map([['frames/44x72/gold.png', frame], ['icons/star.png', star]]) }, previewTarget(260, 1))
+
+    const draws = calls.filter((c) => c.startsWith('drawImage'))
+    expect(draws).toEqual([
+      'drawImage(frameImage,0,0,520,850)',
+      'drawImage(starImage,20.8,42.5,52,26)',
+      `drawImage(starImage,${520 - 20.8 - 52},${850 - 42.5 - 26},52,26)`,
+    ])
+  })
+
+  it('draws no corner icon without a ticked corner, a chosen icon or its image, and old Cards are unchanged', () => {
+    const star = { width: 100, height: 100 } as unknown as ImageSource
+    const images = new Map([['icons/star.png', star]])
+    const settings = { icon: 'icons/star.png', corners: [], size: 8, insetY: 4, insetX: 4 }
+    for (const cornerIcons of [settings, { ...settings, corners: ['topLeft' as const], icon: null }, { ...settings, corners: ['topLeft' as const], icon: 'icons/gone.png' }, undefined]) {
+      const { ctx, calls } = recorder()
+      renderCard(ctx, { ...design, frame: null, cornerIcons }, { images }, previewTarget(260, 1))
+      expect(calls.some((c) => c.startsWith('drawImage'))).toBe(false)
+    }
+  })
+
   it('draws in card units at any scale', () => {
     const { ctx, calls } = recorder()
 

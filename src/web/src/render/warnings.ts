@@ -6,7 +6,7 @@ import type { TextResources } from '../text/textResources'
 // One place that decides what is wrong with a Card. The card list shows ⚠, the affected
 // control shows the message, and the export lists them (#27).
 
-export type CardPart = 'card' | 'artwork' | 'frame' | 'header' | 'banner' | 'textbox'
+export type CardPart = 'card' | 'artwork' | 'frame' | 'cornerIcons' | 'header' | 'banner' | 'textbox'
 
 export type CardWarning = { part: CardPart; message: string }
 
@@ -24,6 +24,10 @@ export function missingAssetWarnings(design: CardDesign, manifest: AssetManifest
   const warnings: CardWarning[] = []
   if (design.frame && !manifest.frames.some((f) => f.path === design.frame)) {
     warnings.push({ part: 'frame', message: `The Frame “${fileName(design.frame)}” is missing.` })
+  }
+  const icons = design.cornerIcons
+  if (icons?.icon && icons.corners.length > 0 && !manifest.icons.some((i) => i.path === icons.icon)) {
+    warnings.push({ part: 'cornerIcons', message: `The icon “${fileName(icons.icon)}” is missing.` })
   }
   for (const slot of SNIPPET_SLOTS) {
     const snippet = design.snippets[slot]

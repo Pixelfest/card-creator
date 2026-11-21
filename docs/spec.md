@@ -80,6 +80,7 @@ assets/
   frames/44x72/*.png
   fonts/*.woff2 | *.ttf | *.otf
   snippet-backgrounds/*.png
+  icons/*.png           (corner icons, any size)
   emoji/                (Twemoji SVGs)
   CREDITS.md            (optional)
 ```
@@ -101,12 +102,17 @@ Decided in [Canvas text rendering](https://github.com/Pixelfest/card-creator/iss
 - The preview uses `cssSize × devicePixelRatio`.
 - Layout (line breaks, box positions) is computed by pure functions that are tested on their data, not on pixels.
 
-**Draw order (bottom → top):** fill colour, Artwork, Frame, then the textbox, banner and header snippets. Each snippet draws its background, then its text.
+**Draw order (bottom → top):** fill colour, Artwork, Frame, corner icons, then the textbox, banner and header snippets. Each snippet draws its background, then its text.
 
 **Artwork**
 - Formats: JPG, PNG, WebP.
 - Initially scaled to cover the Card. The user can then pan and zoom freely, and any uncovered area shows the fill colour.
 - **Reset to cover** restores the initial fit.
+
+**Corner icons:** one icon from `assets/icons/`, drawn in any ticked combination of the four corners. They draw above the Artwork and Frame and below the snippets, clipped to the Card. Stored in the design as the optional `cornerIcons` field `{ icon, corners, size, insetY, insetX }`; a Card without it shows no corner icons.
+- **Size** is the icon's width as a percentage of the Card width, 2–15%, default 8%. The height follows the image's aspect ratio. The icon is anchored at its outer corner, so a bigger size grows towards the middle of the Card.
+- **Distances** from the top/bottom edge (percentage of Card height) and from the side edge (percentage of Card width), 0–20%, default 4% each, measured from the Card edge and mirrored per corner. The icon is never flipped or rotated.
+- Size and distances are shared by every ticked corner, as is the icon. A missing icon is skipped and the Card gets a missing-asset warning (only while a corner is ticked).
 
 **Text snippets:** at most one per slot (`header`, `banner`, `textbox`).
 - The box is horizontally centred. Its width is card width × zoom (25–200%).
@@ -134,10 +140,11 @@ Decided in [Editor and Collection UI](https://github.com/Pixelfest/card-creator/
   - Drag a snippet to move it vertically.
   - Use the scroll wheel to zoom the part under the pointer.
   - Click a part to select it.
-- **Right:** a column of part buttons (Card, Artwork, Frame, Header, Banner, Textbox; an empty slot shows "+") beside the selected part's properties.
+- **Right:** a column of part buttons (Card, Artwork, Frame, Corner icons, Header, Banner, Textbox; an empty slot shows "+") beside the selected part's properties.
   - **Card:** name, Copies.
   - **Artwork:** upload, zoom, pan X/Y, fill colour, reset to cover.
   - **Frame:** visual tiles, plus a warning if the Frame is missing.
+  - **Corner icons:** icon tiles (plus None), a tick box per corner, and size and distance sliders, each with a number box. Sliders preview while held and save on release; there is no drag on the card.
   - **Snippet:** text, font (each previewed in itself), size, colour, outline on/off + colour, alignment, background, vertical position, zoom, remove, and the doesn't-fit warning.
 
 ## 8. Saving, undo and redo

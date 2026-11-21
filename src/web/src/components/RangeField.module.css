@@ -19,3 +19,14 @@
 .field input {
   width: 100%;
 }
+
+.number {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  color: var(--text);
+}
+
+.field .number input {
+  width: 4.5rem;
+}
