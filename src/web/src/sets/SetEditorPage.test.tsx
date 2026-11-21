@@ -540,7 +540,7 @@ describe('SetEditorPage', () => {
     expect(await screen.findByRole('note')).toHaveTextContent("The textbox text doesn't fit.")
   })
 
-  describe('Export to Word', () => {
+  describe('Export', () => {
     const ghost = serverCard('cardddddddddddddddddd', 'Ghost', 2, 1, 0)
     const lostKnight = { ...knight, design: { ...design, frame: 'frames/44x72/deleted.png' } }
 
@@ -556,8 +556,14 @@ describe('SetEditorPage', () => {
 
     it('lists the Cards with Copies-0 unchecked and disabled, the totals, warnings and the reminder', async () => {
       openExport()
-      fireEvent.click(await screen.findByRole('button', { name: 'Export to Word…' }))
-      const dialog = screen.getByRole('dialog', { name: 'Export to Word' })
+      fireEvent.click(await screen.findByRole('button', { name: 'Export…' }))
+      const dialog = screen.getByRole('dialog', { name: 'Export' })
+
+      // PDF by default, Word on request.
+      expect(within(dialog).getByRole('radio', { name: 'PDF (.pdf)' })).toBeChecked()
+      fireEvent.click(within(dialog).getByRole('radio', { name: 'Word (.docx)' }))
+      expect(within(dialog).getByRole('radio', { name: 'Word (.docx)' })).toBeChecked()
+      expect(within(dialog).getByRole('radio', { name: 'PDF (.pdf)' })).not.toBeChecked()
 
       expect(within(dialog).getByRole('checkbox', { name: /Dragon/ })).toBeChecked()
       expect(within(dialog).getByRole('checkbox', { name: /Knight/ })).toBeChecked()
@@ -585,15 +591,15 @@ describe('SetEditorPage', () => {
 
     it('counts pages of 12', async () => {
       openExport([{ ...dragon, copies: 12 }, { ...knight, copies: 1 }])
-      fireEvent.click(await screen.findByRole('button', { name: 'Export to Word…' }))
+      fireEvent.click(await screen.findByRole('button', { name: 'Export…' }))
       expect(screen.getByText('13 cards on 2 pages')).toBeInTheDocument()
     })
 
     it('shows an error with Retry when the export fails, and downloads nothing', async () => {
       openExport([dragon])
       const click = vi.spyOn(HTMLAnchorElement.prototype, 'click')
-      fireEvent.click(await screen.findByRole('button', { name: 'Export to Word…' }))
-      const dialog = screen.getByRole('dialog', { name: 'Export to Word' })
+      fireEvent.click(await screen.findByRole('button', { name: 'Export…' }))
+      const dialog = screen.getByRole('dialog', { name: 'Export' })
 
       // jsdom has no canvas, so rendering the card fails.
       await waitFor(() => expect(within(dialog).getByRole('button', { name: 'Export' })).toBeEnabled())
@@ -608,7 +614,7 @@ describe('SetEditorPage', () => {
     it('is disabled while offline', async () => {
       const online = vi.spyOn(navigator, 'onLine', 'get').mockReturnValue(false)
       openExport()
-      expect(await screen.findByRole('button', { name: 'Export to Word…' })).toBeDisabled()
+      expect(await screen.findByRole('button', { name: 'Export…' })).toBeDisabled()
       online.mockRestore()
     })
   })

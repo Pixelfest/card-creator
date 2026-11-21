@@ -13,12 +13,6 @@ import {
   WidthType,
   type IBorderOptions,
 } from 'docx'
-import type { AssetManifest } from '../assets/api'
-import type { Card } from '../editor/model'
-import { renderCardToPng } from '../render/exportCard'
-import { emojiKey, type ImageSource } from '../render/renderCard'
-import { imageRequests } from '../render/useRenderResources'
-import type { TextResources } from '../text/textResources'
 import {
   A4_TWIPS,
   COLUMNS,
@@ -26,12 +20,12 @@ import {
   PRINT_MM,
   ROWS,
   columnWidthsTwips,
-  expandCopies,
   mmToPx96,
   mmToTwips,
   pageMarginsTwips,
   paginate,
 } from './layout'
+import { renderPrintImages, type ExportInput } from './render'
 
 // Builds the .docx (docs/spec.md, section 10; research/docx-export.md §4, §9): one fixed-layout
 // table per A4 page, inline images at 48×76 mm (the 44×72 mm Card plus its 2 mm white cut
@@ -142,76 +136,7 @@ export function documentToBlob(document: Document): Promise<Blob> {
   return Packer.toBlob(document)
 }
 
-export type ExportProgress = { done: number; total: number }
-
-export type ExportInput = {
-  cards: readonly Card[]
-  selected: ReadonlySet<string>
-  manifest: AssetManifest | undefined
-  text: TextResources
-  artworkUrl: (id: string) => string
-  onProgress?: (progress: ExportProgress) => void
-}
-
-/**
- * Renders each selected Card once to a 568×898 PNG (520×850 plus the cut border), after loading every image it needs, and
- * builds the .docx with its Copies consecutive. An image that fails to load fails the export
- * (it would be silently missing from the print), except an emoji, which falls back to text
- * exactly as in the editor.
- */
-export async function exportCards({
-  cards,
-  selected,
-  manifest,
-  text,
-  artworkUrl,
-  onProgress,
-}: ExportInput): Promise<Blob> {
-  const unique = cards.filter((card) => selected.has(card.id) && card.copies > 0)
-  const total = unique.length + 1
-  const loaded = new Map<string, Promise<ImageSource | undefined>>()
-  const pngs = new Map<string, Uint8Array>()
-
-  onProgress?.({ done: 0, total })
-  for (const [i, card] of unique.entries()) {
-    const images = new Map<string, ImageSource>()
-    for (const { key, load } of imageRequests(card.design, manifest, artworkUrl)) {
-      let pending = loaded.get(key)
-      if (!pending) {
-        const optional = key.startsWith(emojiKey(''))
-        pending = load().catch((error: unknown) => {
-          if (optional) return undefined
-          throw error
-        })
-        loaded.set(key, pending)
-      }
-      let image: ImageSource | undefined
-      try {
-        image = await pending
-      } catch {
-        throw new Error(`Couldn't load an image for “${card.name}”.`)
-      }
-      if (image) images.set(key, image)
-    }
-    const blob = await renderCardToPng(card.design, { images, text })
-    pngs.set(card.id, new Uint8Array(await blob.arrayBuffer()))
-    onProgress?.({ done: i + 1, total })
-  }
-
-  const printed = expandCopies(unique).map((card) => pngs.get(card.id)!)
-  const blob = await documentToBlob(buildDocument(printed))
-  onProgress?.({ done: total, total })
-  return blob
-}
-
-/** Saves a Blob as a download. */
-export function download(blob: Blob, fileName: string): void {
-  const url = URL.createObjectURL(blob)
-  const link = document.createElement('a')
-  link.href = url
-  link.download = fileName
-  document.body.append(link)
-  link.click()
-  link.remove()
-  setTimeout(() => URL.revokeObjectURL(url), 10_000)
+/** Renders the selected Cards and builds `{Set name}.docx` from them. */
+export async function exportDocx(input: ExportInput): Promise<Blob> {
+  return renderPrintImages(input, async (images) => documentToBlob(buildDocument(images)))
 }

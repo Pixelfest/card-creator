@@ -133,7 +133,7 @@ Decided in [Canvas text rendering](https://github.com/Pixelfest/card-creator/iss
 
 Decided in [Editor and Collection UI](https://github.com/Pixelfest/card-creator/issues/11). The prototype, variant D on branch [`prototype/editor-ui`](https://github.com/Pixelfest/card-creator/tree/prototype/editor-ui/prototype/ui-editor), is the visual reference. Its code is throwaway.
 
-- **Header bar:** back to the Collection, editable Set name, Undo / Redo, save status, Copy link, **Export to Word…**.
+- **Header bar:** back to the Collection, editable Set name, Undo / Redo, save status, Copy link, **Export…**.
 - **Left, the card list:** drag handle, name, ⚠, ×Copies, Duplicate, Delete, and **+ Add card**. Clicking a card selects it.
 - **Centre:** the selected Card, large, on a dark workspace.
   - Drag the Artwork to pan it.
@@ -182,11 +182,11 @@ Pending saves are flushed on page leave.
 - Duplicated Cards and Sets share Artwork files.
 - A daily background job deletes Artwork files that no Card has referenced for 30 days.
 
-## 10. Export to Word
+## 10. Export to PDF and Word
 
 Decided in [Export details](https://github.com/Pixelfest/card-creator/issues/10) and [Generating an A4 .docx](https://github.com/Pixelfest/card-creator/issues/3). Research: [`research/docx-export.md`](https://github.com/Pixelfest/card-creator/blob/research/docx-export/research/docx-export.md).
 
-**Generation:** in the browser with the `docx` npm package (`Packer.toBlob`).
+**Generation:** in the browser: PDF with the `pdf-lib` npm package, Word with the `docx` npm package (`Packer.toBlob`). Both load on first export and share the rendering and the layout.
 
 **Layout**
 - A4 portrait with one fixed-layout table per page: 4 × 3 cells of 48×76 mm with 2 mm spacer columns and rows. The grid is centred (about 6 mm side margins and 32.5 mm top/bottom).
@@ -194,15 +194,20 @@ Decided in [Export details](https://github.com/Pixelfest/card-creator/issues/10)
 - Size images in unrounded px at 96 dpi (`mm/25.4*96`). Round twips up.
 - **Cut lines:** card-cell borders, single, `sz=2` (¼ pt), black.
 
+**PDF**
+- The same A4 grid, with each 48×76 mm image drawn at its slot and a ¼ pt black rectangle on its edge as the cut line.
+- Each unique image is embedded once and drawn for every Copy.
+
 **Content**
 - Each Card renders once as a 300 DPI PNG (568×898 px including the cut border) and the buffer is reused for its Copies, so `docx` stores each unique image once.
 - Cards appear in card-list order, with each Card's Copies consecutive. Copies 0 is excluded.
 
 **Dialog**
-1. A checkbox per Card, all checked by default. Copies-0 Cards are unchecked and disabled. A running total of cards and pages.
-2. Warnings (missing assets, text that doesn't fit) for the selected Cards, with **Export anyway**.
-3. The reminder "Print at 100% / Actual size: don't use Fit to page".
-4. A progress bar, then the download `{Set name}.docx`.
+1. A format choice: **PDF (.pdf)** (the default) or **Word (.docx)**.
+2. A checkbox per Card, all checked by default. Copies-0 Cards are unchecked and disabled. A running total of cards and pages.
+3. Warnings (missing assets, text that doesn't fit) for the selected Cards, with **Export anyway**.
+4. The reminder "Print at 100% / Actual size: don't use Fit to page".
+5. A progress bar, then the download `{Set name}.pdf` or `{Set name}.docx`.
 
 ## 11. Errors and offline
 
