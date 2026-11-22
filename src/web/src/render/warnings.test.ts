@@ -12,6 +12,7 @@ const manifest: AssetManifest = {
     { path: 'fonts/Broken.woff2', displayName: 'Broken', url: '/assets/3/fonts/Broken.woff2', aspectRatio: null }],
   snippetBackgrounds: [],
   icons: [{ path: 'icons/star.png', displayName: 'Star', url: '/assets/4/icons/star.png', aspectRatio: 1 }],
+  backs: [{ path: 'backs/navy.png', displayName: 'Navy', url: '/assets/5/backs/navy.png', aspectRatio: 0.63 }],
   emoji: null,
 }
 const design = (frame: string | null): CardDesign => ({ fill: '#fff', frame, artwork: null, snippets: {} })

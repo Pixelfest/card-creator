@@ -6,6 +6,7 @@ import { coverPlacement, MAX_ZOOM, MIN_ZOOM, withZoom, type ArtworkRef } from '.
 import { CARD_HEIGHT, CARD_WIDTH } from '../render/units'
 import * as actions from './actions'
 import styles from './ArtworkProperties.module.css'
+import ui from '../ui/ui.module.css'
 import { FillColour } from './CardProperties'
 import { useEditor, useEditorApi } from './editorHooks'
 
@@ -70,16 +71,16 @@ export function ArtworkProperties() {
         />
         <button
           type="button"
-          className={styles.primary}
+          className={ui.primary}
           disabled={!online || upload.state === 'uploading'}
           onClick={() => picker.current?.click()}
         >
           {upload.state === 'uploading' ? 'Uploading…' : saved ? 'Replace image…' : 'Upload image…'}
         </button>
-        <small className={styles.hint}>JPG, PNG or WebP, up to 10 MB.</small>
-        {!online && <small className={styles.hint}>You're offline. Upload comes back when you reconnect.</small>}
+        <small className={ui.hint}>JPG, PNG or WebP, up to 10 MB.</small>
+        {!online && <small className={ui.hint}>You're offline. Upload comes back when you reconnect.</small>}
         {upload.state === 'failed' && (
-          <p role="alert" className={styles.error}>
+          <p role="alert" className={ui.error}>
             {upload.message}{' '}
             {upload.file && (
               <button type="button" onClick={() => upload.file && void send(upload.file)} disabled={!online}>
@@ -127,7 +128,7 @@ export function ArtworkProperties() {
               Remove image
             </button>
           </div>
-          <small className={styles.hint}>Drag the card to move the image; scroll to zoom where you point.</small>
+          <small className={ui.hint}>Drag the card to move the image; scroll to zoom where you point.</small>
         </>
       )}
 

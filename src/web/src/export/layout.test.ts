@@ -1,47 +1,20 @@
 import { describe, expect, it } from 'vitest'
 import {
-  columnWidthsTwips,
+  BACK_BLEED_MM,
+  backRectMm,
+  flipEdge,
+  isDoubleSided,
   exportFileName,
   expandCopies,
   gridGeometry,
-  mmToEmu,
-  mmToPx96,
-  mmToTwips,
   pageCount,
-  pageMarginsTwips,
-  pageTwips,
   paginate,
   parseCardWidth,
   printLayout,
-  rowHeightsTwips,
   slotOriginMm,
 } from './layout'
 
 const standard = printLayout()
-
-describe('unit conversions', () => {
-  it('converts mm to unrounded px at 96 dpi, which docx turns into exact EMU', () => {
-    expect(mmToPx96(25.4)).toBe(96)
-    expect(mmToPx96(44)).toBeCloseTo(166.299, 3)
-    expect(Number.isInteger(mmToPx96(44))).toBe(false)
-    // docx computes EMU as round(px × 9525).
-    expect(Math.round(mmToPx96(44) * 9525)).toBe(1584000)
-    expect(Math.round(mmToPx96(72) * 9525)).toBe(2592000)
-  })
-
-  it('converts mm to twips, rounding up', () => {
-    expect(mmToTwips(25.4)).toBe(1440)
-    expect(mmToTwips(44)).toBe(2495) // 2494.49
-    expect(mmToTwips(72)).toBe(4082) // 4081.89
-    expect(mmToTwips(4)).toBe(227) // 226.77
-    expect(mmToTwips(0)).toBe(0)
-  })
-
-  it('converts mm to EMU', () => {
-    expect(mmToEmu(44)).toBe(1584000)
-    expect(mmToEmu(72)).toBe(2592000)
-  })
-})
 
 describe('printLayout', () => {
   it('defaults to 44 × 72 mm Cards, 4 × 3 on A4 portrait', () => {
@@ -108,11 +81,6 @@ describe('grid', () => {
     expect(gridGeometry(standard)).toEqual({ width: 198, height: 232, marginX: 6, marginY: 32.5 })
   })
 
-  it('has card and gap columns alternating', () => {
-    expect(columnWidthsTwips(standard)).toEqual([2722, 114, 2722, 114, 2722, 114, 2722])
-    expect(rowHeightsTwips(standard)).toEqual([4309, 114, 4309, 114, 4309])
-  })
-
   it('places slots row by row, 50 mm apart across and 78 mm down', () => {
     expect(slotOriginMm(standard, 0)).toEqual({ x: 6, y: 32.5 })
     expect(slotOriginMm(standard, 3)).toEqual({ x: 156, y: 32.5 })
@@ -120,14 +88,9 @@ describe('grid', () => {
     expect(slotOriginMm(standard, 11)).toEqual({ x: 156, y: 188.5 })
   })
 
-  it('centres the grid with page margins in twips (about 6 mm and 32.5 mm)', () => {
-    // Width 11230 of 11906, height 13155 of 16838.
-    expect(pageMarginsTwips(standard)).toEqual({ top: 1841, left: 338 })
-  })
-
   it('centres a landscape grid on the turned page', () => {
     const layout = printLayout(57)
-    expect(pageTwips(layout)).toEqual({ width: 16838, height: 11906 })
+    expect(layout.pageMm).toEqual({ width: 297, height: 210 })
     const { width, marginX, marginY } = gridGeometry(layout)
     expect(width).toBe(250)
     expect(marginX).toBe(23.5)
@@ -187,28 +150,70 @@ describe('paginate', () => {
   })
 })
 
+describe('Backs', () => {
+  it('bleed 2 mm past the Card, exactly filling the front slot', () => {
+    expect(BACK_BLEED_MM).toBe(2)
+    const back = backRectMm(standard, 0)
+    expect({ width: back.width, height: back.height }).toEqual(standard.printMm)
+  })
+
+  it('sit in the mirrored column of the same row', () => {
+    // Slot 0 is top-left on the front, so its Back is top-right on the back page.
+    expect(backRectMm(standard, 0)).toEqual({ ...slotOriginMm(standard, 3), width: 48, height: 76 })
+    expect(backRectMm(standard, 3)).toEqual({ ...slotOriginMm(standard, 0), width: 48, height: 76 })
+    expect(backRectMm(standard, 5)).toEqual({ ...slotOriginMm(standard, 6), width: 48, height: 76 })
+  })
+
+  it('line up with their front when the sheet is turned over its vertical axis', () => {
+    for (const layout of [standard, printLayout(57)]) {
+      for (let slot = 0; slot < layout.perPage; slot++) {
+        const front = slotOriginMm(layout, slot)
+        const back = backRectMm(layout, slot)
+        // Turned over, x becomes page width − x; the centres must coincide.
+        expect(layout.pageMm.width - (back.x + back.width / 2)).toBeCloseTo(front.x + layout.printMm.width / 2, 9)
+        expect(back.y + back.height / 2).toBeCloseTo(front.y + layout.printMm.height / 2, 9)
+      }
+    }
+  })
+
+  it('need flip on long edge in portrait and short edge in landscape', () => {
+    expect(flipEdge(standard)).toBe('long')
+    expect(flipEdge(printLayout(57))).toBe('short')
+  })
+
+  it('make the PDF double-sided only when a printed Card has a Back the library has', () => {
+    const backs = [{ path: 'backs/navy.png' }]
+    const card = (id: string, back: string | null, copies = 1) => ({ id, copies, design: { back } })
+    expect(isDoubleSided([card('a', null), card('b', 'backs/navy.png')], backs)).toBe(true)
+    expect(isDoubleSided([card('a', null), card('b', 'backs/navy.png', 0)], backs)).toBe(false)
+    expect(isDoubleSided([card('a', null), card('b', 'backs/navy.png')], backs, new Set(['a']))).toBe(false)
+    expect(isDoubleSided([card('a', 'backs/deleted.png')], backs)).toBe(false)
+    expect(isDoubleSided([{ id: 'a', copies: 1, design: {} }], backs)).toBe(false)
+    expect(isDoubleSided([card('b', 'backs/navy.png')], undefined)).toBe(false)
+  })
+})
+
 describe('exportFileName', () => {
-  it('uses the Set name and the format', () => {
-    expect(exportFileName('Dragon Deck', 'docx')).toBe('Dragon Deck.docx')
-    expect(exportFileName('Dragon Deck', 'pdf')).toBe('Dragon Deck.pdf')
+  it('uses the Set name', () => {
+    expect(exportFileName('Dragon Deck')).toBe('Dragon Deck.pdf')
   })
 
   it('replaces characters that are invalid in file names', () => {
-    expect(exportFileName('A/B\\C:D*E?F"G<H>I|J', 'docx')).toBe('A_B_C_D_E_F_G_H_I_J.docx')
-    expect(exportFileName('tab\there', 'docx')).toBe('tab_here.docx')
+    expect(exportFileName('A/B\\C:D*E?F"G<H>I|J')).toBe('A_B_C_D_E_F_G_H_I_J.pdf')
+    expect(exportFileName('tab\there')).toBe('tab_here.pdf')
   })
 
   it('drops trailing dots and spaces and guards reserved names', () => {
-    expect(exportFileName('Deck... ', 'docx')).toBe('Deck.docx')
-    expect(exportFileName('CON', 'docx')).toBe('_CON.docx')
+    expect(exportFileName('Deck... ')).toBe('Deck.pdf')
+    expect(exportFileName('CON')).toBe('_CON.pdf')
   })
 
   it('falls back when nothing is left', () => {
-    expect(exportFileName('   ', 'docx')).toBe('cards.docx')
-    expect(exportFileName('...', 'docx')).toBe('cards.docx')
+    expect(exportFileName('   ')).toBe('cards.pdf')
+    expect(exportFileName('...')).toBe('cards.pdf')
   })
 
   it('keeps Unicode', () => {
-    expect(exportFileName('Draken & Ridders 🐉', 'docx')).toBe('Draken & Ridders 🐉.docx')
+    expect(exportFileName('Draken & Ridders 🐉')).toBe('Draken & Ridders 🐉.pdf')
   })
 })

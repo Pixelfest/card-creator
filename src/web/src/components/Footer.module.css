@@ -1,9 +1,9 @@
 .footer {
-  max-width: 48rem;
+  max-width: var(--page-width);
   margin: 2rem auto;
   padding: 1rem;
-  border-top: 1px solid #e2ded6;
-  font-size: 0.85rem;
+  border-top: 1px solid var(--border);
+  font-size: var(--text-sm);
   color: var(--muted);
   text-align: center;
 }

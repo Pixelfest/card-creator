@@ -25,6 +25,7 @@ const assets = {
   ],
   snippetBackgrounds: [],
   icons: [],
+  backs: [{ path: 'backs/navy-lattice.png', displayName: 'Navy lattice', url: '/assets/b1/backs/navy-lattice.png', aspectRatio: 0.63 }],
   emoji: null,
 }
 const design = { fill: '#ffffff', frame: 'frames/44x72/gold-border.png', artwork: null, snippets: {} }
@@ -63,7 +64,7 @@ describe('SetEditorPage', () => {
     renderWithQuery(<SetEditorPage collectionId={collectionId} setId={setId} />)
 
     expect(await screen.findByLabelText('Set name')).toHaveValue('Dragon Deck')
-    expect(await screen.findByRole('link', { name: '← Dragon Game' })).toHaveAttribute('href', `/c/${collectionId}`)
+    expect(await screen.findByRole('link', { name: 'Dragon Game' })).toHaveAttribute('href', `/c/${collectionId}`)
     const list = await screen.findByRole('list', { name: 'Cards' })
     expect(within(list).getAllByRole('listitem').map((li) => li.textContent)).toEqual([
       expect.stringContaining('Dragon'),
@@ -252,6 +253,37 @@ describe('SetEditorPage', () => {
     await waitFor(() => expect(calls(fetchMock, 'PUT')).toHaveLength(1))
     expect(JSON.parse(String(calls(fetchMock, 'PUT')[0][1]?.body)).design).toMatchObject({ frame: null })
     expect(within(tiles).getByRole('radio', { name: 'None' })).toHaveAttribute('aria-checked', 'true')
+  })
+
+  it('picks a Back from the tiles and saves it in the design', async () => {
+    const fetchMock = stubEditor({
+      [`PUT ${cardsUrl}/${dragon.id}`]: (init) => ({ body: { ...dragon, ...JSON.parse(String(init?.body)), version: 2 } }),
+    })
+    renderWithQuery(<SetEditorPage collectionId={collectionId} setId={setId} />)
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Back' }))
+    const tiles = await screen.findByRole('radiogroup', { name: 'Back' })
+    expect(within(tiles).getByRole('radio', { name: 'None' })).toHaveAttribute('aria-checked', 'true')
+
+    fireEvent.click(within(tiles).getByRole('radio', { name: 'Navy lattice' }))
+
+    await waitFor(() => expect(calls(fetchMock, 'PUT')).toHaveLength(1))
+    expect(JSON.parse(String(calls(fetchMock, 'PUT')[0][1]?.body)).design).toMatchObject({ back: 'backs/navy-lattice.png' })
+  })
+
+  it('flags a card whose Back is missing on the Back control', async () => {
+    const lost = serverCard('cardccccccccccccccccc', 'Lost', 0)
+    stubApi({
+      [`GET /api/collections/${collectionId}`]: { body: collection },
+      [`GET ${setUrl}`]: { body: set },
+      [`GET ${cardsUrl}`]: { body: [{ ...lost, design: { ...design, back: 'backs/deleted.png' } }] },
+      'GET /api/assets': { body: assets },
+    })
+    renderWithQuery(<SetEditorPage collectionId={collectionId} setId={setId} />)
+
+    expect(await screen.findByRole('img', { name: 'Lost has warnings' })).toHaveTextContent('⚠')
+    fireEvent.click(screen.getByRole('button', { name: /^Back/ }))
+    expect(await screen.findByRole('note')).toHaveTextContent('The Back “deleted.png” is missing.')
   })
 
   it('flags a card whose Frame is missing, in the list and on the Frame control', async () => {
@@ -559,12 +591,6 @@ describe('SetEditorPage', () => {
       fireEvent.click(await screen.findByRole('button', { name: 'Export…' }))
       const dialog = screen.getByRole('dialog', { name: 'Export' })
 
-      // PDF by default, Word on request.
-      expect(within(dialog).getByRole('radio', { name: 'PDF (.pdf)' })).toBeChecked()
-      fireEvent.click(within(dialog).getByRole('radio', { name: 'Word (.docx)' }))
-      expect(within(dialog).getByRole('radio', { name: 'Word (.docx)' })).toBeChecked()
-      expect(within(dialog).getByRole('radio', { name: 'PDF (.pdf)' })).not.toBeChecked()
-
       expect(within(dialog).getByRole('checkbox', { name: /Dragon/ })).toBeChecked()
       expect(within(dialog).getByRole('checkbox', { name: /Knight/ })).toBeChecked()
       const ghostBox = within(dialog).getByRole('checkbox', { name: /Ghost/ })
@@ -593,6 +619,15 @@ describe('SetEditorPage', () => {
       openExport([{ ...dragon, copies: 12 }, { ...knight, copies: 1 }])
       fireEvent.click(await screen.findByRole('button', { name: 'Export…' }))
       expect(screen.getByText('13 cards on 2 pages')).toBeInTheDocument()
+      expect(screen.queryByText(/double-sided/)).not.toBeInTheDocument()
+    })
+
+    it('counts back pages and says how to flip when a Card has a Back', async () => {
+      const backed = { ...dragon, copies: 12, design: { ...design, back: 'backs/navy-lattice.png' } }
+      openExport([backed, { ...knight, copies: 1 }])
+      fireEvent.click(await screen.findByRole('button', { name: 'Export…' }))
+      expect(await screen.findByText('13 cards on 4 pages (2 sheets, double-sided)')).toBeInTheDocument()
+      expect(screen.getByText('Print double-sided, flip on long edge.')).toBeInTheDocument()
     })
 
     it('shows an error with Retry when the export fails, and downloads nothing', async () => {

@@ -1,49 +1,37 @@
 /* Layout from the prototype's variant D: card list left, card centre on a dark workspace,
-   parts and properties right. */
+   parts and properties right. The side columns stay narrow so the card gets the room on a
+   laptop screen. */
 .editor {
   display: grid;
-  grid-template: auto 1fr / 250px 1fr 440px;
+  grid-template: auto 1fr / 240px 1fr clamp(360px, 28vw, 440px);
   height: 100vh;
-  background: #2b2b30;
+  background: var(--stage);
 }
 
 .header {
   grid-column: 1 / -1;
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  padding: 0.5rem 0.9rem;
-  background: #fff;
-  border-bottom: 1px solid #ddd;
-}
-
-.headerEnd {
-  margin-left: auto;
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-}
-
-.back {
-  white-space: nowrap;
 }
 
 .name {
-  font-size: 1.25rem;
+  font-size: var(--text-md);
   font-weight: 600;
   min-width: 16rem;
 }
 
 .cardList,
 .properties {
-  background: #fff;
+  background: var(--surface-1);
   overflow: auto;
   padding: 0.75rem;
 }
 
+.cardList {
+  border-right: 1px solid var(--border);
+}
+
 .properties {
-  background: transparent;
-  padding: 1rem 1rem 1rem 0;
+  padding: 0;
+  border-left: 1px solid var(--border);
 }
 
 .stage {
@@ -55,14 +43,6 @@
   margin: 0;
   color: var(--muted);
   font-style: italic;
-}
-
-.hint {
-  color: var(--muted);
-}
-
-.error {
-  color: var(--danger);
 }
 
 @media (max-width: 900px) {

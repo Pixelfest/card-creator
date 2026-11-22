@@ -16,6 +16,7 @@ const manifest: AssetManifest = {
     { path: 'icons/star.png', displayName: 'Star', url: '/assets/a/icons/star.png', aspectRatio: 1 },
     { path: 'icons/heart.png', displayName: 'Heart', url: '/assets/b/icons/heart.png', aspectRatio: 1 },
   ],
+  backs: [],
   emoji: null,
 }
 

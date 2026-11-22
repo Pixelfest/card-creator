@@ -3,6 +3,7 @@ import { useEffect, type ReactNode } from 'react'
 import { fetchJson, isNotFound } from '../api/http'
 import { useCollection } from '../collections/api'
 import { NameInput } from '../components/NameInput'
+import { TopBar } from '../components/TopBar'
 import { ArtworkPaste } from '../editor/ArtworkPaste'
 import { CardList } from '../editor/CardList'
 import { CardStage } from '../editor/CardStage'
@@ -12,11 +13,11 @@ import { PartsPanel } from '../editor/PartsPanel'
 import { ConflictDialog, SaveStatus } from '../editor/SaveStatus'
 import { UndoRedo } from '../editor/UndoRedo'
 import { ExportButton } from '../export/ExportDialog'
-import { Link } from '../Link'
 import { NotFoundPage } from '../NotFoundPage'
 import { paths } from '../router'
 import { useSet, useSetMutations } from './api'
 import styles from './SetEditorPage.module.css'
+import ui from '../ui/ui.module.css'
 
 /** The Set's Cards, fetched fresh each time the editor opens; the editor owns them after. */
 function useInitialCards(collectionId: string, setId: string) {
@@ -47,14 +48,14 @@ export function SetEditorPage({ collectionId, setId }: { collectionId: string; s
     return (
       <Layout collectionId={collectionId} setId={setId}>
         {cards.isError ? (
-          <p role="alert" className={styles.error}>
+          <p role="alert" className={ui.error}>
             Couldn't load the cards.{' '}
             <button type="button" onClick={() => cards.refetch()}>
               Retry
             </button>
           </p>
         ) : (
-          <p className={styles.hint}>Loading…</p>
+          <p className={ui.hint}>Loading…</p>
         )}
       </Layout>
     )
@@ -67,8 +68,8 @@ export function SetEditorPage({ collectionId, setId }: { collectionId: string; s
         setId={setId}
         status={
           <>
-            <UndoRedo />
             <SaveStatus />
+            <UndoRedo />
             <ExportButton setName={set.data?.name ?? ''} />
           </>
         }
@@ -98,28 +99,36 @@ function Layout({
 
   return (
     <div className={styles.editor}>
-      <header className={styles.header}>
-        <Link href={paths.collection(collectionId)} className={styles.back}>
-          ← {collection.data?.name ?? 'Collection'}
-        </Link>
-        {set.data && (
-          <NameInput
-            value={set.data.name}
-            label="Set name"
-            className={styles.name}
-            onCommit={(name) => rename.mutateAsync({ setId, name })}
-          />
-        )}
-        {set.isError && !isNotFound(set.error) && (
-          <span role="alert" className={styles.error}>
-            Couldn't load the set.{' '}
-            <button type="button" onClick={() => set.refetch()}>
-              Retry
-            </button>
-          </span>
-        )}
-        <div className={styles.headerEnd}>{status}</div>
-      </header>
+      <TopBar
+        className={styles.header}
+        crumbs={[
+          { label: collection.data?.name ?? 'Collection', href: paths.collection(collectionId) },
+          {
+            label: (
+              <>
+                {set.data && (
+                  <NameInput
+                    value={set.data.name}
+                    label="Set name"
+                    className={styles.name}
+                    onCommit={(name) => rename.mutateAsync({ setId, name })}
+                  />
+                )}
+                {set.isError && !isNotFound(set.error) && (
+                  <span role="alert" className={ui.error}>
+                    Couldn't load the set.{' '}
+                    <button type="button" onClick={() => set.refetch()}>
+                      Retry
+                    </button>
+                  </span>
+                )}
+              </>
+            ),
+          },
+        ]}
+      >
+        {status}
+      </TopBar>
 
       <aside className={styles.cardList} aria-label="Card list">
         {children}

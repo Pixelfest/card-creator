@@ -9,6 +9,7 @@ import type { TextResources } from '../text/textResources'
 import { useTextResources } from '../text/useTextResources'
 import * as actions from './actions'
 import styles from './CardStage.module.css'
+import ui from '../ui/ui.module.css'
 import { useEditor, useEditorApi } from './editorHooks'
 import type { Card, CardDesign, Snippet, SnippetSlot } from './model'
 import { MAX_SNIPPET_ZOOM, MIN_SNIPPET_ZOOM, SNIPPET_DRAW_ORDER } from './snippets'
@@ -49,7 +50,7 @@ export function CardStage() {
       {card && design ? (
         <StageCanvas card={card} design={design} cssWidth={cssWidth} />
       ) : (
-        <p className={styles.hint}>Add a card to start.</p>
+        <p className={ui.hint}>Add a card to start.</p>
       )}
     </div>
   )
@@ -221,7 +222,7 @@ function StageCanvas({ card, design, cssWidth }: { card: Card; design: CardDesig
     [cardId],
   )
 
-  if (!text) return <p className={styles.hint}>Loading fonts…</p>
+  if (!text) return <p className={ui.hint}>Loading fonts…</p>
 
   const movable = !!artwork || Object.keys(design.snippets).length > 0
   return (

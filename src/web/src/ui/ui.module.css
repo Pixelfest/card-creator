@@ -1,0 +1,98 @@
+/* Styles shared across the app. Components use these instead of keeping their own copies, so
+   a button, hint or warning looks the same everywhere. */
+
+/* The content column of an ordinary page (everything but the editor). */
+.page {
+  max-width: var(--page-width);
+  margin: var(--space-5) auto 0;
+  padding: 0 var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+/* Buttons. Plain buttons get their look from index.css. */
+.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--on-accent);
+}
+
+.danger {
+  background: var(--danger);
+  border-color: var(--danger);
+  color: var(--on-accent);
+}
+
+/* A plain button for a destructive action that doesn't need to shout, like "Remove". */
+.dangerText {
+  align-self: flex-start;
+  color: var(--danger);
+}
+
+/* Text. */
+.hint {
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--text-sm);
+}
+
+.error {
+  margin: 0;
+  color: var(--danger);
+}
+
+.warning {
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--warn-border);
+  border-radius: var(--radius);
+  background: var(--warn-bg);
+  font-size: var(--text-sm);
+}
+
+/* A labelled form field: the label text sits above the control. */
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  font-size: var(--text-sm);
+  color: var(--muted);
+}
+
+/* Pickers: a grid of tiles, each a radio button with a thumbnail and a label. */
+.tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-2);
+  font-size: var(--text-xs);
+  text-align: center;
+  color: var(--text);
+}
+
+/* The selected option in any radio group of buttons. */
+.tile[aria-checked='true'],
+.selectable[aria-checked='true'] {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent);
+}
+
+/* Behind a thumbnail, so transparent parts of the image read as transparent. */
+.checker {
+  display: block;
+  border-radius: var(--radius-sm);
+  background: repeating-conic-gradient(var(--checker-a) 0 25%, var(--checker-b) 0 50%) 0 0 / 10px 10px;
+}
+
+/* The thumbnail for "None". */
+.none {
+  border: 1px dashed var(--border-strong);
+}
+
+.pickerGrid {
+  max-height: 60vh;
+  overflow-y: auto;
+  padding: var(--space-1);
+}

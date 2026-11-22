@@ -1,7 +1,7 @@
-.page {
-  max-width: 44rem;
-  margin: 3rem auto 1rem;
-  padding: 0 1rem;
+/* Long text reads best in a narrower column. (main. so this wins over ui.page.) */
+main.prose {
+  max-width: 48rem;
+  gap: 0;
 }
 
 .credits h2:first-child {
@@ -10,15 +10,8 @@
 
 .credits code {
   font-size: 0.9em;
-  background: #e9e6df;
+  background: var(--surface-2);
   padding: 0 0.2em;
-  border-radius: 3px;
+  border-radius: var(--radius-sm);
 }
 
-.hint {
-  color: var(--muted);
-}
-
-.error {
-  color: var(--danger);
-}

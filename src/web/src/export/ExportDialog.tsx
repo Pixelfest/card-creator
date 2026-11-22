@@ -2,17 +2,19 @@ import { useCallback, useState } from 'react'
 import { artworkUrl } from '../artwork/api'
 import { useAssets } from '../assets/api'
 import { Dialog } from '../components/ConfirmDialog'
-import dialogStyles from '../components/ConfirmDialog.module.css'
 import { useOnline } from '../components/useOnline'
 import { useEditor, useEditorApi } from '../editor/editorHooks'
 import { cardWarnings } from '../render/warnings'
 import { useTextResources } from '../text/useTextResources'
 import styles from './ExportDialog.module.css'
+import ui from '../ui/ui.module.css'
 import {
   CARD_MM,
   CARD_WIDTH_RANGE_MM,
   expandCopies,
   exportFileName,
+  flipEdge,
+  isDoubleSided,
   pageCount,
   parseCardWidth,
   printLayout,
@@ -37,13 +39,6 @@ export function ExportButton({ setName }: { setName: string }) {
     </>
   )
 }
-
-type Format = 'pdf' | 'docx'
-
-const FORMATS: { value: Format; label: string }[] = [
-  { value: 'pdf', label: 'PDF (.pdf)' },
-  { value: 'docx', label: 'Word (.docx)' },
-]
 
 /** The last printed Card width, remembered in this browser only. */
 const CARD_WIDTH_KEY = 'cardCreator.export.cardWidthMm'
@@ -72,8 +67,8 @@ const mm = (value: number) => String(Math.round(value * 10) / 10)
 type Phase ={ kind: 'choose' } | { kind: 'exporting'; progress: ExportProgress } | { kind: 'failed'; message: string }
 
 /**
- * Export (docs/spec.md, section 10): pick Cards and a format, see the totals and the warnings
- * for the picked Cards, then render and download `{Set name}.pdf` or `{Set name}.docx`.
+ * Export (docs/spec.md, section 10): pick Cards and a print size, see the totals and the warnings
+ * for the picked Cards, then render and download `{Set name}.pdf`.
  */
 export function ExportDialog({ setName, onClose }: { setName: string; onClose: () => void }) {
   const cards = useEditor((s) => s.cards)
@@ -84,7 +79,6 @@ export function ExportDialog({ setName, onClose }: { setName: string; onClose: (
   const [selected, setSelected] = useState<ReadonlySet<string>>(
     () => new Set(cards.filter((c) => c.copies > 0).map((c) => c.id)),
   )
-  const [format, setFormat] = useState<Format>('pdf')
   const [phase, setPhase] = useState<Phase>({ kind: 'choose' })
   const [widthInput, setWidthInput] = useState(storedCardWidth)
 
@@ -92,7 +86,9 @@ export function ExportDialog({ setName, onClose }: { setName: string; onClose: (
   const layout = printLayout(cardWidth ?? CARD_MM.width)
   const printable = cards.filter((c) => c.copies > 0)
   const cardCount = expandCopies(cards, selected).length
-  const pages = pageCount(cardCount, layout.perPage)
+  const sheets = pageCount(cardCount, layout.perPage)
+  const doubleSided = isDoubleSided(cards, manifest?.backs, selected)
+  const pages = doubleSided ? sheets * 2 : sheets
   const warnings = text
     ? cards
         .filter((c) => selected.has(c.id) && c.copies > 0)
@@ -117,11 +113,8 @@ export function ExportDialog({ setName, onClose }: { setName: string; onClose: (
     storeCardWidth(cardWidth)
     setPhase({ kind: 'exporting', progress: { done: 0, total: 1 } })
     try {
-      // Loaded on first export: `docx` and `pdf-lib` are large and only needed here.
-      const [{ download }, build] = await Promise.all([
-        import('./render'),
-        format === 'pdf' ? import('./pdf').then((m) => m.exportPdf) : import('./docx').then((m) => m.exportDocx),
-      ])
+      // Loaded on first export: `pdf-lib` is large and only needed here.
+      const [{ download }, { exportPdf: build }] = await Promise.all([import('./render'), import('./pdf')])
       const blob = await build({
         cards,
         selected,
@@ -131,7 +124,7 @@ export function ExportDialog({ setName, onClose }: { setName: string; onClose: (
         layout,
         onProgress: (progress) => setPhase({ kind: 'exporting', progress }),
       })
-      download(blob, exportFileName(setName, format))
+      download(blob, exportFileName(setName))
       onClose()
     } catch (error) {
       const detail = error instanceof Error && error.message ? ` ${error.message}` : ''
@@ -153,7 +146,7 @@ export function ExportDialog({ setName, onClose }: { setName: string; onClose: (
           <button type="button" onClick={close} disabled={exporting}>
             Cancel
           </button>
-          <button type="button" className={dialogStyles.primary} onClick={run} disabled={!ready || exporting}>
+          <button type="button" className={ui.primary} onClick={run} disabled={!ready || exporting}>
             {label}
           </button>
         </>
@@ -189,22 +182,6 @@ export function ExportDialog({ setName, onClose }: { setName: string; onClose: (
         </ul>
       </fieldset>
 
-      <fieldset className={styles.format} disabled={exporting}>
-        <legend className={styles.legend}>Format</legend>
-        {FORMATS.map((f) => (
-          <label key={f.value}>
-            <input
-              type="radio"
-              name="export-format"
-              value={f.value}
-              checked={format === f.value}
-              onChange={() => setFormat(f.value)}
-            />
-            {f.label}
-          </label>
-        ))}
-      </fieldset>
-
       <fieldset className={styles.size} disabled={exporting}>
         <legend className={styles.legend}>Print size</legend>
         <label>
@@ -228,7 +205,7 @@ export function ExportDialog({ setName, onClose }: { setName: string; onClose: (
             Reset to {CARD_MM.width} mm
           </button>
         )}
-        <p id="export-card-size" className={cardWidth === undefined ? styles.error : styles.muted}>
+        <p id="export-card-size" className={cardWidth === undefined ? ui.error : styles.muted}>
           {cardWidth === undefined
             ? `Enter a width from ${CARD_WIDTH_RANGE_MM.min} to ${CARD_WIDTH_RANGE_MM.max} mm.`
             : `${layout.perPage} per page (${layout.columns} × ${layout.rows}), A4 ${layout.orientation}`}
@@ -237,12 +214,13 @@ export function ExportDialog({ setName, onClose }: { setName: string; onClose: (
 
       <p className={styles.totals} aria-live="polite">
         {cardCount} {cardCount === 1 ? 'card' : 'cards'} on {pages} {pages === 1 ? 'page' : 'pages'}
+        {doubleSided && ` (${sheets} ${sheets === 1 ? 'sheet' : 'sheets'}, double-sided)`}
       </p>
 
       {!text && <p className={styles.muted}>Loading fonts…</p>}
 
       {warnings.length > 0 && (
-        <div className={styles.warnings} role="status">
+        <div className={`${ui.warning} ${styles.warnings}`} role="status">
           <p>
             <strong>⚠ Check these before printing:</strong>
           </p>
@@ -257,6 +235,9 @@ export function ExportDialog({ setName, onClose }: { setName: string; onClose: (
       )}
 
       <p className={styles.reminder}>Print at 100% / Actual size: don't use Fit to page.</p>
+      {doubleSided && (
+        <p className={styles.reminder}>Print double-sided, flip on {flipEdge(layout)} edge.</p>
+      )}
 
       {!online && <p role="alert">You're offline. Export needs a connection.</p>}
 
@@ -269,7 +250,7 @@ export function ExportDialog({ setName, onClose }: { setName: string; onClose: (
         />
       )}
       {phase.kind === 'failed' && (
-        <p role="alert" className={styles.error}>
+        <p role="alert" className={ui.error}>
           {phase.message}
         </p>
       )}

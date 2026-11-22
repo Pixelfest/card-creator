@@ -2,7 +2,7 @@ import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { renderWithQuery, stubApi } from '../test/renderWithQuery'
 import type { CardSet } from './api'
-import { SetsTable } from './SetsTable'
+import { SetTiles } from './SetTiles'
 
 const collectionId = '3f9XkQ2bL0aZ7yT1mN4pRs'
 const sets = `/api/collections/${collectionId}/sets`
@@ -22,29 +22,52 @@ function aSet(id: string, name: string): CardSet {
 const dragons = aSet('aaaaaaaaaaaaaaaaaaaaaa', 'Dragon Deck')
 const events = aSet('bbbbbbbbbbbbbbbbbbbbbb', 'Event cards')
 
-describe('SetsTable', () => {
+describe('SetTiles', () => {
   afterEach(() => vi.unstubAllGlobals())
 
   it('lists each Set with its card count, last change and Open link', async () => {
     stubApi({ [`GET ${sets}`]: { body: [dragons, events] } })
 
-    renderWithQuery(<SetsTable collectionId={collectionId} />)
+    renderWithQuery(<SetTiles collectionId={collectionId} />)
 
     expect(await screen.findByDisplayValue('Dragon Deck')).toBeInTheDocument()
     expect(screen.getByDisplayValue('Event cards')).toBeInTheDocument()
-    const row = screen.getByDisplayValue('Dragon Deck').closest('tr')!
-    expect(within(row).getByText('0')).toBeInTheDocument()
-    expect(within(row).getByText(/^today /)).toBeInTheDocument()
+    const row = screen.getByDisplayValue('Dragon Deck').closest('li')!
+    expect(within(row).getByText(/^0 cards · today /)).toBeInTheDocument()
     expect(within(row).getByRole('link', { name: 'Open Dragon Deck' })).toHaveAttribute(
       'href',
       `/c/${collectionId}/s/${dragons.id}`,
     )
   })
 
+  it("shows a thumbnail of each Set's first Card", async () => {
+    const withCards = { ...dragons, cardCount: 2 }
+    const card = (id: string, name: string, position: number) => ({
+      id,
+      setId: dragons.id,
+      name,
+      copies: 1,
+      position,
+      version: 1,
+      updatedAt: new Date().toISOString(),
+      design: { fill: '#ffffff', frame: null, artwork: null, snippets: {} },
+    })
+    stubApi({
+      [`GET ${sets}`]: { body: [withCards] },
+      [`GET ${sets}/${dragons.id}/cards`]: { body: [card('cardbbbbbbbbbbbbbbbbb', 'Knight', 1), card('cardaaaaaaaaaaaaaaaaa', 'Dragon', 0)] },
+      'GET /api/assets': { body: { frames: [], fonts: [], icons: [], backs: [], snippetBackgrounds: [] } },
+    })
+
+    renderWithQuery(<SetTiles collectionId={collectionId} />)
+
+    expect(await screen.findByRole('img', { name: 'Preview of Dragon', hidden: true })).toBeInTheDocument()
+    expect(screen.queryByRole('img', { name: 'Preview of Knight', hidden: true })).not.toBeInTheDocument()
+  })
+
   it('says so when there are no Sets', async () => {
     stubApi({ [`GET ${sets}`]: { body: [] } })
 
-    renderWithQuery(<SetsTable collectionId={collectionId} />)
+    renderWithQuery(<SetTiles collectionId={collectionId} />)
 
     expect(await screen.findByText('No sets yet.')).toBeInTheDocument()
   })
@@ -54,7 +77,7 @@ describe('SetsTable', () => {
       [`GET ${sets}`]: { body: [dragons] },
       [`PATCH ${sets}/${dragons.id}`]: { body: { ...dragons, name: 'Dragons' } },
     })
-    renderWithQuery(<SetsTable collectionId={collectionId} />)
+    renderWithQuery(<SetTiles collectionId={collectionId} />)
     const input = await screen.findByLabelText('Name of set Dragon Deck')
 
     fireEvent.change(input, { target: { value: 'Dragons' } })
@@ -73,7 +96,7 @@ describe('SetsTable', () => {
       [`GET ${sets}`]: { body: [dragons] },
       [`POST ${sets}/${dragons.id}/duplicate`]: { status: 201, body: aSet('cccccccccccccccccccccc', 'Dragon Deck (copy)') },
     })
-    renderWithQuery(<SetsTable collectionId={collectionId} />)
+    renderWithQuery(<SetTiles collectionId={collectionId} />)
 
     fireEvent.click(await screen.findByRole('button', { name: 'Duplicate Dragon Deck' }))
 
@@ -94,7 +117,7 @@ describe('SetsTable', () => {
         return { status: 204 }
       },
     })
-    renderWithQuery(<SetsTable collectionId={collectionId} />)
+    renderWithQuery(<SetTiles collectionId={collectionId} />)
 
     fireEvent.click(await screen.findByRole('button', { name: 'Delete Dragon Deck' }))
     const dialog = screen.getByRole('dialog', { name: /delete “dragon deck”/i })
@@ -117,7 +140,7 @@ describe('SetsTable', () => {
 
   it('cancelling the delete dialog deletes nothing', async () => {
     const fetchMock = stubApi({ [`GET ${sets}`]: { body: [dragons] } })
-    renderWithQuery(<SetsTable collectionId={collectionId} />)
+    renderWithQuery(<SetTiles collectionId={collectionId} />)
 
     fireEvent.click(await screen.findByRole('button', { name: 'Delete Dragon Deck' }))
     fireEvent.keyDown(window, { key: 'Escape' })

@@ -1,9 +1,9 @@
 import { useEffect } from 'react'
 import { useCredits } from '../assets/api'
 import { Footer } from '../components/Footer'
-import { Link } from '../Link'
-import { paths } from '../router'
+import { TopBar } from '../components/TopBar'
 import styles from './CreditsPage.module.css'
+import ui from '../ui/ui.module.css'
 import { Markdown } from './Markdown'
 
 export function CreditsPage() {
@@ -15,8 +15,8 @@ export function CreditsPage() {
 
   return (
     <>
-      <main className={styles.page}>
-        <Link href={paths.home()}>← Home</Link>
+      <TopBar crumbs={[{ label: 'Credits' }]} />
+      <main className={`${ui.page} ${styles.prose}`}>
         <h1>Credits</h1>
 
         <section aria-labelledby="twemoji">
@@ -35,9 +35,9 @@ export function CreditsPage() {
         </section>
 
         <section className={styles.credits} aria-label="Asset credits">
-          {credits.isPending && <p className={styles.hint}>Loading…</p>}
+          {credits.isPending && <p className={ui.hint}>Loading…</p>}
           {credits.isError && (
-            <p role="alert" className={styles.error}>
+            <p role="alert" className={ui.error}>
               Couldn't load the credits.{' '}
               <button type="button" onClick={() => credits.refetch()}>
                 Retry

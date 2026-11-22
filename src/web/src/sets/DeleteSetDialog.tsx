@@ -1,6 +1,7 @@
 import { useEffect, useId, useState, type FormEvent } from 'react'
 import { useSetMutations, type CardSet } from './api'
 import styles from './DeleteSetDialog.module.css'
+import ui from '../ui/ui.module.css'
 
 /** Deleting cannot be undone, so the user types the Set's name to confirm. */
 export function DeleteSetDialog({
@@ -53,7 +54,7 @@ export function DeleteSetDialog({
           autoComplete="off"
         />
         {remove.isError && (
-          <p role="alert" className={styles.error}>
+          <p role="alert" className={ui.error}>
             Couldn't delete the set. Try again.
           </p>
         )}
@@ -61,7 +62,7 @@ export function DeleteSetDialog({
           <button type="button" onClick={onClose}>
             Cancel
           </button>
-          <button type="submit" className={styles.delete} disabled={!matches || remove.isPending}>
+          <button type="submit" className={ui.danger} disabled={!matches || remove.isPending}>
             Delete set
           </button>
         </div>

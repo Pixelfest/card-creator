@@ -32,20 +32,21 @@ import {
 import { printImage, type PrintImage } from '../render/exportCard'
 import type { SnippetText } from '../render/renderCard'
 import { CARD_HEIGHT, CARD_WIDTH } from '../render/units'
-import { paginate, printLayout, slotOriginMm, type PrintLayout } from './layout'
+import { backRectMm, paginate, printLayout, slotOriginMm, type PrintLayout } from './layout'
 import { renderPrintCards, type ExportInput, type PrintCard } from './render'
 
-// Builds the .pdf (docs/spec.md, section 10): the same A4 grid as the Word export, with each
+// Builds the .pdf (docs/spec.md, section 10): an A4 grid with each
 // card image (Card plus its white cut border) drawn at its slot and a ¼ pt black cut line on
 // its edge. Snippet text is drawn over the image as real text in the embedded font,
-// so it prints sharp instead of at the image's 300 DPI.
+// so it prints sharp instead of at the image's 300 DPI. When any card has a Back, every front
+// page is followed by its back page: each Back mirrored behind its card, with bleed, no cut lines.
 
 /** Points (1/72 in), PDF's unit. */
 export function mmToPt(mm: number): number {
   return (mm / 25.4) * 72
 }
 
-/** Cut lines: ¼ pt, black, as in the Word export. */
+/** Cut lines: ¼ pt, black. */
 const CUT_LINE_PT = 0.25
 
 /** `#rgb` or `#rrggbb` as a pdf-lib colour; anything else is black. */
@@ -87,6 +88,15 @@ export async function buildPdf(
   const page = { width: mmToPt(layout.pageMm.width), height: mmToPt(layout.pageMm.height) }
   const size = { width: mmToPt(layout.printMm.width), height: mmToPt(layout.printMm.height) }
   const pixels = printImage(layout.cardMm.width)
+  const doubleSided = cards.some((card) => card.back)
+  const embedImage = async (png: Uint8Array) => {
+    let image = embedded.get(png)
+    if (!image) {
+      image = await pdf.embedPng(png)
+      embedded.set(png, image)
+    }
+    return image
+  }
 
   for (const pageCards of paginate(cards, layout.perPage)) {
     const pdfPage = pdf.addPage([page.width, page.height])
@@ -99,11 +109,7 @@ export async function buildPdf(
       return { font, key }
     }
     for (const [slot, card] of pageCards.entries()) {
-      let image = embedded.get(card.png)
-      if (!image) {
-        image = await pdf.embedPng(card.png)
-        embedded.set(card.png, image)
-      }
+      const image = await embedImage(card.png)
       const origin = slotOriginMm(layout, slot)
       // PDF measures y up from the bottom of the page.
       const rect = { x: mmToPt(origin.x), y: page.height - mmToPt(origin.y) - size.height, ...size }
@@ -111,9 +117,28 @@ export async function buildPdf(
       if (card.text.length) await drawText(pdfPage, rect, pixels, card.text, fontKey)
       pdfPage.drawRectangle({ ...rect, borderColor: rgb(0, 0, 0), borderWidth: CUT_LINE_PT })
     }
+    if (!doubleSided) continue
+    // Added even when this page's cards have no Backs, so fronts stay on odd pages.
+    const backPage = pdf.addPage([page.width, page.height])
+    for (const [slot, card] of pageCards.entries()) {
+      if (!card.back) continue
+      const mm = backRectMm(layout, slot)
+      const rect = { x: mmToPt(mm.x), y: page.height - mmToPt(mm.y + mm.height), width: mmToPt(mm.width), height: mmToPt(mm.height) }
+      drawCover(backPage, await embedImage(card.back), rect)
+    }
   }
   // Without this pdf-lib adds a blank page to an empty document.
   return pdf.save({ addDefaultPage: false })
+}
+
+/** Draws the image scaled to cover the rectangle, centred, and clipped to it. */
+function drawCover(page: PDFPage, image: PDFImage, rect: { x: number; y: number; width: number; height: number }) {
+  const scale = Math.max(rect.width / image.width, rect.height / image.height)
+  const width = image.width * scale
+  const height = image.height * scale
+  page.pushOperators(pushGraphicsState(), rectangle(rect.x, rect.y, rect.width, rect.height), clip(), endPath())
+  page.drawImage(image, { x: rect.x + (rect.width - width) / 2, y: rect.y + (rect.height - height) / 2, width, height })
+  page.pushOperators(popGraphicsState())
 }
 
 /**
@@ -190,7 +215,7 @@ async function loadFontFiles(cards: readonly PrintCard[], input: ExportInput): P
 
 /** Renders the selected Cards and builds `{Set name}.pdf` from them. */
 export async function exportPdf(input: ExportInput): Promise<Blob> {
-  return renderPrintCards(input, true, async (cards) => {
+  return renderPrintCards(input, async (cards) => {
     const bytes = await buildPdf(cards, await loadFontFiles(cards, input), input.layout)
     return new Blob([bytes as Uint8Array<ArrayBuffer>], { type: 'application/pdf' })
   })

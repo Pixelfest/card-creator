@@ -1,23 +1,28 @@
 .panel {
   display: flex;
-  gap: 0.75rem;
-  align-items: flex-start;
+  flex-direction: column;
   min-height: 100%;
 }
 
+/* The part tabs wrap onto a second row when the column is narrow, and stay in view while
+   the properties below them scroll. */
 .parts {
+  position: sticky;
+  top: 0;
+  z-index: 1;
   display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-  flex: none;
-  width: 6.5rem;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  padding: 0.75rem 1rem;
+  background: var(--surface-1);
+  border-bottom: 1px solid var(--border);
 }
 
 .parts button {
-  text-align: left;
-  background: #3a3a40;
-  color: #eee;
-  border-color: #555;
+  padding: 0.25rem 0.65rem;
+  border-radius: 999px;
+  font-size: var(--text-sm);
+  white-space: nowrap;
 }
 
 .parts button:disabled {
@@ -27,22 +32,26 @@
 .parts .empty {
   background: transparent;
   border-style: dashed;
-  color: #bbb;
+  color: var(--muted);
 }
 
-.parts .active {
+.parts .active,
+.parts .active:hover {
   background: var(--accent);
   border-color: var(--accent);
+  color: var(--on-accent);
 }
 
 .warn {
-  color: #ffcf66;
+  color: var(--warn);
+}
+
+.parts .active .warn {
+  color: inherit;
 }
 
 .properties {
   flex: 1;
   min-width: 0;
-  padding: 0.75rem;
-  border-radius: 8px;
-  background: #f7f7f8;
+  padding: 1rem;
 }

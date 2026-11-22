@@ -29,6 +29,7 @@ const manifest: AssetManifest = {
   fonts: [],
   snippetBackgrounds: [{ path: 'snippet-backgrounds/scroll.png', displayName: 'Scroll', url: '/assets/s/scroll.png', aspectRatio: 4 }],
   icons: [],
+  backs: [],
   emoji: { baseUrl: '/assets/emoji/abc/' },
 }
 const text = createTextResources({ families: new Map(), failed: new Set() }, measurer, manifest)

@@ -1,12 +1,60 @@
+/* The app's colours. Every stylesheet takes its colours from here, so the theme is one place. */
 :root {
-  --text: #1a1a1a;
-  --muted: #6b6b6b;
-  --border: #bbb;
-  --accent: #2f6fde;
-  --danger: #b3261e;
+  color-scheme: dark;
+
+  /* Surfaces, darkest to lightest. */
+  --stage: #141417; /* the editor's workspace behind the card */
+  --bg: #18181b; /* page background */
+  --surface-1: #1f1f23; /* panels, header, dialogs, tables */
+  --surface-2: #29292f; /* controls: buttons, inputs, tiles */
+  --surface-3: #34343b; /* hovered controls */
+
+  --text: #e8e8ec;
+  --muted: #9a9aa5;
+  --border: #3d3d46;
+  --border-strong: #55555f;
+
+  --accent: #3b7ddd; /* filled buttons, selection outlines */
+  --accent-soft: rgb(59 125 221 / 22%); /* selected rows */
+  --on-accent: #fff; /* text on --accent or --danger */
+  --link: #74a7ff;
+
+  --success: #5cc970;
+  --warn: #f0b45a;
+  --warn-bg: rgb(240 180 90 / 12%);
+  --warn-border: rgb(240 180 90 / 45%);
+  --danger: #e5534b;
+
+  /* Behind images, so transparent parts read as transparent. */
+  --checker-a: #3a3a42;
+  --checker-b: #2a2a30;
+
+  --backdrop: rgb(0 0 0 / 60%);
+  --shadow: 0 4px 16px rgb(0 0 0 / 45%);
+
+  /* Type sizes. */
+  --text-xs: 0.8rem; /* tile labels, small print */
+  --text-sm: 0.85rem; /* field labels, hints, status */
+  --text-md: 1rem;
+  --text-lg: 1.25rem; /* dialog and editor titles */
+  --text-xl: 1.6rem; /* page titles */
+
+  /* Spacing steps: 4, 8, 12, 16, 24px. */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+
+  --radius-sm: 4px; /* inputs, thumbnails */
+  --radius: 6px; /* buttons, callouts */
+  --radius-lg: 10px; /* panels, dialogs */
+
+  --page-width: 64rem; /* Home, Collection, Credits */
+
   font-family: system-ui, sans-serif;
   color: var(--text);
-  background: #f4f2ee;
+  background: var(--bg);
 }
 
 * {
@@ -15,27 +63,56 @@
 
 body {
   margin: 0;
+  background: var(--bg);
 }
 
 button,
-input {
+input,
+select,
+textarea {
   font: inherit;
   color: inherit;
 }
 
-button {
+/* :where() keeps these defaults at zero specificity, so any component class overrides them,
+   hover included. */
+:where(button) {
   padding: 0.3rem 0.75rem;
   border: 1px solid var(--border);
-  border-radius: 6px;
-  background: #fff;
+  border-radius: var(--radius);
+  background: var(--surface-2);
   cursor: pointer;
 }
 
-button:disabled {
+:where(button:hover:not(:disabled)) {
+  background: var(--surface-3);
+}
+
+:where(button:disabled) {
   opacity: 0.5;
   cursor: default;
 }
 
+:where(input:not([type='checkbox'], [type='radio'], [type='range'], [type='color'])),
+:where(select, textarea) {
+  padding: 0.3rem 0.45rem;
+  background: var(--surface-2);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+}
+
+/* One keyboard focus ring for every control. */
+:focus-visible {
+  outline: 2px solid var(--link);
+  outline-offset: 2px;
+}
+
+input[type='checkbox'],
+input[type='radio'],
+input[type='range'] {
+  accent-color: var(--accent);
+}
+
 a {
-  color: var(--accent);
+  color: var(--link);
 }

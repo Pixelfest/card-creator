@@ -1,6 +1,6 @@
 # Card Creator v1: spec
 
-A public web app for designing custom board-game cards in **Sets**, grouped in **Collections**, and exporting them to an A4 Word document for printing. Terms are defined in [`CONTEXT.md`](../CONTEXT.md); use them.
+A public web app for designing custom board-game cards in **Sets**, grouped in **Collections**, and exporting them to an A4 PDF for printing. Terms are defined in [`CONTEXT.md`](../CONTEXT.md); use them.
 
 This spec consolidates the decisions on the [wayfinder map](https://github.com/Pixelfest/card-creator/issues/1). Each section links the ticket that holds the reasoning.
 
@@ -81,6 +81,7 @@ assets/
   fonts/*.woff2 | *.ttf | *.otf
   snippet-backgrounds/*.png
   icons/*.png           (corner icons, any size)
+  backs/*.png           (Card Backs, any size)
   emoji/                (Twemoji SVGs)
   CREDITS.md            (optional)
 ```
@@ -88,6 +89,7 @@ assets/
 - The assets are copied into the image. The backend scans them at startup and serves a manifest at `/api/assets`, grouped by type.
 - Asset URLs carry a content hash, so they can be cached long-term.
 - Frames are PNG at a 44:72 ratio (ideal 520×850 px). A Frame more than about 1% off that ratio is skipped with a log warning.
+- Backs are PNG of any size; they print scaled to cover the Back area, centred. Ideal: 48:76 at 300 DPI (567×898 px for a 44 mm Card).
 - One font file is one selectable font, except that files differing only in extension are one font: the browser draws the `.woff2` (else `.ttf`, else `.otf`) and the PDF export embeds the `.ttf` (else `.otf`), since PDF viewers cannot read WOFF2.
 - Display names come from file names: `gold-ornate.png` → "Gold ornate".
 - **Missing assets:** a Card stores asset paths. If a file disappears, the Card keeps the path and the editor renders without it, using a fallback font for a missing font. The Card shows ⚠ in the card list and a note on the affected control. Export still works and lists the warning.
@@ -182,11 +184,11 @@ Pending saves are flushed on page leave.
 - Duplicated Cards and Sets share Artwork files.
 - A daily background job deletes Artwork files that no Card has referenced for 30 days.
 
-## 10. Export to PDF and Word
+## 10. Export to PDF
 
 Decided in [Export details](https://github.com/Pixelfest/card-creator/issues/10) and [Generating an A4 .docx](https://github.com/Pixelfest/card-creator/issues/3). Research: [`research/docx-export.md`](https://github.com/Pixelfest/card-creator/blob/research/docx-export/research/docx-export.md).
 
-**Generation:** in the browser: PDF with the `pdf-lib` npm package, Word with the `docx` npm package (`Packer.toBlob`). Both load on first export and share the rendering and the layout.
+**Generation:** in the browser, with the `pdf-lib` npm package, loaded on first export. A Word (.docx) export existed earlier; it was removed in [#61](https://github.com/Pixelfest/card-creator/issues/61) to cut maintenance.
 
 **Print size**
 - The Cards print at a chosen width, 25–120 mm (default 44 mm). The height follows from the Card Format's 44:72 ratio, so the design is scaled, never stretched.
@@ -194,27 +196,31 @@ Decided in [Export details](https://github.com/Pixelfest/card-creator/issues/10)
 - The grid is the one that fits the most cards on A4 within 5 mm minimum page margins, in portrait or landscape (portrait wins a tie). At 44 mm that is 4 × 3 portrait; at 57 mm, 4 × 2 landscape.
 
 **Layout**
-- One fixed-layout table per page: a grid of cells the printed card size with 2 mm spacer columns and rows, centred on the page. At 44 mm: 4 × 3 cells of 48×76 mm, about 6 mm side margins and 32.5 mm top/bottom. A landscape page is A4 with `orient="landscape"`.
-- Rows use `hRule=exact`. Cell margins are 0. Each card cell holds an inline image that fills it: the Card plus its 2 mm white cut border rendered into the PNG.
-- Size images in unrounded px at 96 dpi (`mm/25.4*96`). Round twips up.
-- **Cut lines:** card-cell borders, single, `sz=2` (¼ pt), black.
+- A grid of printed-card slots with 2 mm gaps, centred on the page. At 44 mm: 4 × 3 slots of 48×76 mm, about 6 mm side margins and 32.5 mm top/bottom.
+- Each card image (the Card plus its 2 mm white cut border) is drawn at its slot.
+- **Cut lines:** a ¼ pt black rectangle on the edge of each card image.
 
 **PDF**
-- The same grid and page orientation, with each card image drawn at its slot and a ¼ pt black rectangle on its edge as the cut line.
 - Each unique image is embedded once and drawn for every Copy.
 - Snippet text is not in the PDF's card image: it is drawn on top as real text in the snippet's embedded font (whole font files, via `@pdf-lib/fontkit`), at the same positions as the canvas layout, clipped to the Card, so it prints sharp. Outlines are a stroke at twice the outline width with round joins, drawn before the fill, as on the canvas. Snippet backgrounds and emoji stay in the image. A snippet on the fallback font (its font missing or failed), or on a font with no `.ttf`/`.otf` file, stays in the image too. Because the image is underneath, a snippet's text is drawn above every snippet background, even one that is higher in the draw order.
 
+**Backs (double-sided)**
+- A Card may have a **Back** (Back part in the editor: tiles from `assets/backs`, None by default). The stage only ever shows the front.
+- The PDF is double-sided when at least one printed Card has a Back the library has. Each front page is then followed by its back page, so fronts are on odd pages and Backs on even pages; every front page gets a back page, even an empty one.
+- On the back page each Back sits in the mirrored column of the same row, so it lands behind its front when the sheet turns over its vertical axis: **flip on long edge** in portrait, **flip on short edge** in landscape.
+- A Back covers the Card plus 2 mm bleed on every side (it fills the front's cut-border slot, so the grid is unchanged): a front/back misalignment of up to 2 mm still covers the Card. It is clipped to that area. No cut lines and no text on back pages.
+- A Card without a Back, or with a Back missing from the library, leaves its place blank. Each unique Back is embedded once.
+
 **Content**
-- Each Card renders once as a PNG of at least 300 DPI: 520×850 px, scaled up for Cards wider than 44 mm, plus the cut border (568×898 px in all at 44 mm). The buffer is reused for its Copies, so `docx` stores each unique image once.
+- Each Card renders once as a PNG of at least 300 DPI: 520×850 px, scaled up for Cards wider than 44 mm, plus the cut border (568×898 px in all at 44 mm). The buffer is reused for its Copies.
 - Cards appear in card-list order, with each Card's Copies consecutive. Copies 0 is excluded.
 
 **Dialog**
-1. A format choice: **PDF (.pdf)** (the default) or **Word (.docx)**.
-2. A checkbox per Card, all checked by default. Copies-0 Cards are unchecked and disabled.
-3. The Card width in mm, with the resulting height, the cards per page and the orientation, and a reset to 44 mm. The last width used is remembered in this browser. An empty or out-of-range width blocks the export. A running total of cards and pages.
-4. Warnings (missing assets, text that doesn't fit) for the selected Cards, with **Export anyway**.
-5. The reminder "Print at 100% / Actual size: don't use Fit to page".
-6. A progress bar, then the download `{Set name}.pdf` or `{Set name}.docx`.
+1. A checkbox per Card, all checked by default. Copies-0 Cards are unchecked and disabled.
+2. The Card width in mm, with the resulting height, the cards per page and the orientation, and a reset to 44 mm. The last width used is remembered in this browser. An empty or out-of-range width blocks the export. A running total of cards and pages; when double-sided, the pages include the back pages, followed by the sheets ("13 cards on 4 pages (2 sheets, double-sided)").
+3. Warnings (missing assets, text that doesn't fit) for the selected Cards, with **Export anyway**.
+4. The reminder "Print at 100% / Actual size: don't use Fit to page", and when double-sided "Print double-sided, flip on long edge." (short edge in landscape).
+5. A progress bar, then the download `{Set name}.pdf`.
 
 ## 11. Errors and offline
 

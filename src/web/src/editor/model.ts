@@ -38,6 +38,11 @@ export type CardDesign = {
   snippets: Partial<Record<SnippetSlot, Snippet>>
   /** Optional: Cards saved before corner icons existed have none, which draws nothing. */
   cornerIcons?: CornerIcons
+  /**
+   * Asset path of the Card's Back (e.g. "backs/navy-lattice.png"), or null. Optional: Cards saved
+   * before Backs existed have none. Any Back makes the PDF double-sided.
+   */
+  back?: string | null
 }
 
 export type CardContent = { name: string; copies: number; design: CardDesign }

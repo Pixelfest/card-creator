@@ -1,0 +1,65 @@
+.bar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  min-height: 3rem;
+  padding: var(--space-2) var(--space-4);
+  background: var(--surface-1);
+  border-bottom: 1px solid var(--border);
+}
+
+.nav {
+  min-width: 0;
+  flex: 1;
+}
+
+.crumbs {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  min-width: 0;
+}
+
+.crumbs a {
+  color: var(--muted);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.crumbs a:hover {
+  color: var(--text);
+  text-decoration: underline;
+}
+
+.brand a {
+  color: var(--text);
+  font-weight: 600;
+}
+
+/* A chevron between steps. */
+.crumb {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.crumb::before {
+  content: '›';
+  color: var(--muted);
+}
+
+.crumb[aria-current='page'] {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.end {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex: none;
+}
