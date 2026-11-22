@@ -38,13 +38,6 @@ export function ExportButton({ setName }: { setName: string }) {
   )
 }
 
-type Format = 'pdf' | 'docx'
-
-const FORMATS: { value: Format; label: string }[] = [
-  { value: 'pdf', label: 'PDF (.pdf)' },
-  { value: 'docx', label: 'Word (.docx)' },
-]
-
 /** The last printed Card width, remembered in this browser only. */
 const CARD_WIDTH_KEY = 'cardCreator.export.cardWidthMm'
 
@@ -72,8 +65,8 @@ const mm = (value: number) => String(Math.round(value * 10) / 10)
 type Phase ={ kind: 'choose' } | { kind: 'exporting'; progress: ExportProgress } | { kind: 'failed'; message: string }
 
 /**
- * Export (docs/spec.md, section 10): pick Cards and a format, see the totals and the warnings
- * for the picked Cards, then render and download `{Set name}.pdf` or `{Set name}.docx`.
+ * Export (docs/spec.md, section 10): pick Cards and a print size, see the totals and the warnings
+ * for the picked Cards, then render and download `{Set name}.pdf`.
  */
 export function ExportDialog({ setName, onClose }: { setName: string; onClose: () => void }) {
   const cards = useEditor((s) => s.cards)
@@ -84,7 +77,6 @@ export function ExportDialog({ setName, onClose }: { setName: string; onClose: (
   const [selected, setSelected] = useState<ReadonlySet<string>>(
     () => new Set(cards.filter((c) => c.copies > 0).map((c) => c.id)),
   )
-  const [format, setFormat] = useState<Format>('pdf')
   const [phase, setPhase] = useState<Phase>({ kind: 'choose' })
   const [widthInput, setWidthInput] = useState(storedCardWidth)
 
@@ -117,11 +109,8 @@ export function ExportDialog({ setName, onClose }: { setName: string; onClose: (
     storeCardWidth(cardWidth)
     setPhase({ kind: 'exporting', progress: { done: 0, total: 1 } })
     try {
-      // Loaded on first export: `docx` and `pdf-lib` are large and only needed here.
-      const [{ download }, build] = await Promise.all([
-        import('./render'),
-        format === 'pdf' ? import('./pdf').then((m) => m.exportPdf) : import('./docx').then((m) => m.exportDocx),
-      ])
+      // Loaded on first export: `pdf-lib` is large and only needed here.
+      const [{ download }, { exportPdf: build }] = await Promise.all([import('./render'), import('./pdf')])
       const blob = await build({
         cards,
         selected,
@@ -131,7 +120,7 @@ export function ExportDialog({ setName, onClose }: { setName: string; onClose: (
         layout,
         onProgress: (progress) => setPhase({ kind: 'exporting', progress }),
       })
-      download(blob, exportFileName(setName, format))
+      download(blob, exportFileName(setName))
       onClose()
     } catch (error) {
       const detail = error instanceof Error && error.message ? ` ${error.message}` : ''
@@ -187,22 +176,6 @@ export function ExportDialog({ setName, onClose }: { setName: string; onClose: (
             </li>
           ))}
         </ul>
-      </fieldset>
-
-      <fieldset className={styles.format} disabled={exporting}>
-        <legend className={styles.legend}>Format</legend>
-        {FORMATS.map((f) => (
-          <label key={f.value}>
-            <input
-              type="radio"
-              name="export-format"
-              value={f.value}
-              checked={format === f.value}
-              onChange={() => setFormat(f.value)}
-            />
-            {f.label}
-          </label>
-        ))}
       </fieldset>
 
       <fieldset className={styles.size} disabled={exporting}>

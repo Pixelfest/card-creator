@@ -1,3 +1,4 @@
+/// <reference types="node" />
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { PDFArray, PDFDict, PDFDocument, PDFName, type PDFRawStream, decodePDFRawStream } from 'pdf-lib'

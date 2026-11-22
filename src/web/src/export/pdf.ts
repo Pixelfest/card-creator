@@ -35,7 +35,7 @@ import { CARD_HEIGHT, CARD_WIDTH } from '../render/units'
 import { paginate, printLayout, slotOriginMm, type PrintLayout } from './layout'
 import { renderPrintCards, type ExportInput, type PrintCard } from './render'
 
-// Builds the .pdf (docs/spec.md, section 10): the same A4 grid as the Word export, with each
+// Builds the .pdf (docs/spec.md, section 10): an A4 grid with each
 // card image (Card plus its white cut border) drawn at its slot and a ¼ pt black cut line on
 // its edge. Snippet text is drawn over the image as real text in the embedded font,
 // so it prints sharp instead of at the image's 300 DPI.
@@ -45,7 +45,7 @@ export function mmToPt(mm: number): number {
   return (mm / 25.4) * 72
 }
 
-/** Cut lines: ¼ pt, black, as in the Word export. */
+/** Cut lines: ¼ pt, black. */
 const CUT_LINE_PT = 0.25
 
 /** `#rgb` or `#rrggbb` as a pdf-lib colour; anything else is black. */
@@ -190,7 +190,7 @@ async function loadFontFiles(cards: readonly PrintCard[], input: ExportInput): P
 
 /** Renders the selected Cards and builds `{Set name}.pdf` from them. */
 export async function exportPdf(input: ExportInput): Promise<Blob> {
-  return renderPrintCards(input, true, async (cards) => {
+  return renderPrintCards(input, async (cards) => {
     const bytes = await buildPdf(cards, await loadFontFiles(cards, input), input.layout)
     return new Blob([bytes as Uint8Array<ArrayBuffer>], { type: 'application/pdf' })
   })
