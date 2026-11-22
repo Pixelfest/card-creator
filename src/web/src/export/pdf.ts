@@ -32,14 +32,15 @@ import {
 import { printImage, type PrintImage } from '../render/exportCard'
 import type { SnippetText } from '../render/renderCard'
 import { CARD_HEIGHT, CARD_WIDTH } from '../render/units'
-import { backRectMm, paginate, printLayout, slotOriginMm, type PrintLayout } from './layout'
+import { CARD_MM, backRectMm, paginate, printLayout, slotOriginMm, type PrintLayout } from './layout'
 import { renderPrintCards, type ExportInput, type PrintCard } from './render'
 
 // Builds the .pdf (docs/spec.md, section 10): an A4 grid with each
 // card image (Card plus its white cut border) drawn at its slot and a ¼ pt black cut line on
 // its edge. Snippet text is drawn over the image as real text in the embedded font,
 // so it prints sharp instead of at the image's 300 DPI. When any card has a Back, every front
-// page is followed by its back page: each Back mirrored behind its card, with bleed, no cut lines.
+// page is followed by its back page: each Back mirrored behind its card for a long-edge flip,
+// reaching 2 mm past its cut line, with no cut lines.
 
 /** Points (1/72 in), PDF's unit. */
 export function mmToPt(mm: number): number {
@@ -66,7 +67,7 @@ export function hexToRgb(hex: string): RGB {
 export async function buildPdf(
   cards: readonly PrintCard[],
   fonts: ReadonlyMap<string, Uint8Array> = new Map(),
-  layout: PrintLayout = printLayout(),
+  layout: PrintLayout = printLayout(CARD_MM.width, cards.some((card) => card.back)),
 ): Promise<Uint8Array> {
   const pdf = await PDFDocument.create()
   pdf.registerFontkit(fontkit)

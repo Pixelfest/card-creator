@@ -13,7 +13,6 @@ import {
   CARD_WIDTH_RANGE_MM,
   expandCopies,
   exportFileName,
-  flipEdge,
   isDoubleSided,
   pageCount,
   parseCardWidth,
@@ -83,11 +82,11 @@ export function ExportDialog({ setName, onClose }: { setName: string; onClose: (
   const [widthInput, setWidthInput] = useState(storedCardWidth)
 
   const cardWidth = parseCardWidth(widthInput)
-  const layout = printLayout(cardWidth ?? CARD_MM.width)
+  const doubleSided = isDoubleSided(cards, manifest?.backs, selected)
+  const layout = printLayout(cardWidth ?? CARD_MM.width, doubleSided)
   const printable = cards.filter((c) => c.copies > 0)
   const cardCount = expandCopies(cards, selected).length
   const sheets = pageCount(cardCount, layout.perPage)
-  const doubleSided = isDoubleSided(cards, manifest?.backs, selected)
   const pages = doubleSided ? sheets * 2 : sheets
   const warnings = text
     ? cards
@@ -236,7 +235,7 @@ export function ExportDialog({ setName, onClose }: { setName: string; onClose: (
 
       <p className={styles.reminder}>Print at 100% / Actual size: don't use Fit to page.</p>
       {doubleSided && (
-        <p className={styles.reminder}>Print double-sided, flip on {flipEdge(layout)} edge.</p>
+        <p className={styles.reminder}>Print double-sided, flip on long edge.</p>
       )}
 
       {!online && <p role="alert">You're offline. Export needs a connection.</p>}
