@@ -45,7 +45,7 @@ Where a Text snippet sits on a Card: `header` (in the top of the Frame), `banner
 An image chosen from a repository-supplied library, drawn behind a Text snippet; its proportions determine the snippet's height.
 
 **Cut line**:
-The thin black outline drawn around each Card in the Word export, to guide cutting after printing.
+The thin black outline drawn around each Card in the PDF, to guide cutting after printing.
 _Avoid_: border
 
 ## Relationships

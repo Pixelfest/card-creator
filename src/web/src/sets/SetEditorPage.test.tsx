@@ -559,12 +559,6 @@ describe('SetEditorPage', () => {
       fireEvent.click(await screen.findByRole('button', { name: 'Export…' }))
       const dialog = screen.getByRole('dialog', { name: 'Export' })
 
-      // PDF by default, Word on request.
-      expect(within(dialog).getByRole('radio', { name: 'PDF (.pdf)' })).toBeChecked()
-      fireEvent.click(within(dialog).getByRole('radio', { name: 'Word (.docx)' }))
-      expect(within(dialog).getByRole('radio', { name: 'Word (.docx)' })).toBeChecked()
-      expect(within(dialog).getByRole('radio', { name: 'PDF (.pdf)' })).not.toBeChecked()
-
       expect(within(dialog).getByRole('checkbox', { name: /Dragon/ })).toBeChecked()
       expect(within(dialog).getByRole('checkbox', { name: /Knight/ })).toBeChecked()
       const ghostBox = within(dialog).getByRole('checkbox', { name: /Ghost/ })
