@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest'
 import {
   BACK_BLEED_MM,
   backRectMm,
-  flipEdge,
   isDoubleSided,
   exportFileName,
   expandCopies,
@@ -150,35 +149,78 @@ describe('paginate', () => {
   })
 })
 
-describe('Backs', () => {
-  it('bleed 2 mm past the Card, exactly filling the front slot', () => {
-    expect(BACK_BLEED_MM).toBe(2)
-    const back = backRectMm(standard, 0)
-    expect({ width: back.width, height: back.height }).toEqual(standard.printMm)
+describe('double-sided layout', () => {
+  it('puts cards 4 mm apart and keeps the Backs inside the margins: 5 × 2 landscape at 44 mm', () => {
+    expect(printLayout(44, true)).toMatchObject({ gapMm: 4, columns: 5, rows: 2, perPage: 10, orientation: 'landscape' })
+    expect(gridGeometry(printLayout(44, true))).toEqual({ width: 256, height: 156, marginX: 20.5, marginY: 27 })
   })
 
-  it('sit in the mirrored column of the same row', () => {
-    // Slot 0 is top-left on the front, so its Back is top-right on the back page.
-    expect(backRectMm(standard, 0)).toEqual({ ...slotOriginMm(standard, 3), width: 48, height: 76 })
-    expect(backRectMm(standard, 3)).toEqual({ ...slotOriginMm(standard, 0), width: 48, height: 76 })
-    expect(backRectMm(standard, 5)).toEqual({ ...slotOriginMm(standard, 6), width: 48, height: 76 })
-  })
-
-  it('line up with their front when the sheet is turned over its vertical axis', () => {
-    for (const layout of [standard, printLayout(57)]) {
+  it('keeps every Back inside the 5 mm minimum margins', () => {
+    for (let width = 25; width <= 120; width += 0.5) {
+      const layout = printLayout(width, true)
+      expect(layout.perPage).toBeGreaterThan(0)
       for (let slot = 0; slot < layout.perPage; slot++) {
-        const front = slotOriginMm(layout, slot)
         const back = backRectMm(layout, slot)
-        // Turned over, x becomes page width − x; the centres must coincide.
-        expect(layout.pageMm.width - (back.x + back.width / 2)).toBeCloseTo(front.x + layout.printMm.width / 2, 9)
-        expect(back.y + back.height / 2).toBeCloseTo(front.y + layout.printMm.height / 2, 9)
+        expect(back.x).toBeGreaterThanOrEqual(5 - 1e-9)
+        expect(back.y).toBeGreaterThanOrEqual(5 - 1e-9)
+        expect(back.x + back.width).toBeLessThanOrEqual(layout.pageMm.width - 5 + 1e-9)
+        expect(back.y + back.height).toBeLessThanOrEqual(layout.pageMm.height - 5 + 1e-9)
       }
     }
   })
+})
 
-  it('need flip on long edge in portrait and short edge in landscape', () => {
-    expect(flipEdge(standard)).toBe('long')
-    expect(flipEdge(printLayout(57))).toBe('short')
+describe('Backs', () => {
+  const portrait = printLayout(30, true)
+  const landscape = printLayout(44, true)
+
+  it('reach 2 mm past the front’s cut line on every side', () => {
+    expect(BACK_BLEED_MM).toBe(4)
+    const back = backRectMm(landscape, 0)
+    expect({ width: back.width, height: back.height }).toEqual({ width: 52, height: 80 })
+  })
+
+  it('never overlap a neighbouring Back', () => {
+    for (const layout of [portrait, landscape]) {
+      const rects = Array.from({ length: layout.perPage }, (_, slot) => backRectMm(layout, slot))
+      for (const [i, a] of rects.entries())
+        for (const b of rects.slice(i + 1)) {
+          const apart =
+            a.x + a.width <= b.x + 1e-9 || b.x + b.width <= a.x + 1e-9 || a.y + a.height <= b.y + 1e-9 || b.y + b.height <= a.y + 1e-9
+          expect(apart).toBe(true)
+        }
+    }
+  })
+
+  it('sit in the mirrored column of the same row in portrait', () => {
+    expect(portrait.orientation).toBe('portrait')
+    const last = portrait.columns - 1
+    expect(backRectMm(portrait, 0)).toMatchObject({ x: slotOriginMm(portrait, last).x - 2, y: slotOriginMm(portrait, last).y - 2 })
+  })
+
+  it('sit in the mirrored row of the same column in landscape', () => {
+    // Slot 0 is top-left on the front, so its Back is bottom-left on the back page.
+    expect(backRectMm(landscape, 0)).toEqual({ x: 18.5, y: 105, width: 52, height: 80 })
+    expect(backRectMm(landscape, 7)).toMatchObject({ x: slotOriginMm(landscape, 2).x - 2, y: slotOriginMm(landscape, 2).y - 2 })
+  })
+
+  it('line up with their front when the sheet is turned over its long edge', () => {
+    for (const layout of [standard, portrait, printLayout(57), landscape]) {
+      for (let slot = 0; slot < layout.perPage; slot++) {
+        const front = slotOriginMm(layout, slot)
+        const back = backRectMm(layout, slot)
+        const frontCentre = { x: front.x + layout.printMm.width / 2, y: front.y + layout.printMm.height / 2 }
+        const backCentre = { x: back.x + back.width / 2, y: back.y + back.height / 2 }
+        // Turned over the long edge: x mirrors in portrait, y in landscape. The centres must coincide.
+        if (layout.orientation === 'portrait') {
+          expect(layout.pageMm.width - backCentre.x).toBeCloseTo(frontCentre.x, 9)
+          expect(backCentre.y).toBeCloseTo(frontCentre.y, 9)
+        } else {
+          expect(backCentre.x).toBeCloseTo(frontCentre.x, 9)
+          expect(layout.pageMm.height - backCentre.y).toBeCloseTo(frontCentre.y, 9)
+        }
+      }
+    }
   })
 
   it('make the PDF double-sided only when a printed Card has a Back the library has', () => {

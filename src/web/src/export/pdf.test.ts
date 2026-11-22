@@ -106,15 +106,16 @@ describe('buildPdf with Backs', () => {
     const contents = pdf.getPages()[1].node.Contents()
     const streams = contents instanceof PDFArray ? contents.asArray().map((r) => pdf.context.lookup(r)) : [contents]
     const content = streams.map((s) => new TextDecoder().decode(decodePDFRawStream(s as PDFRawStream).decode())).join('\n')
-    // Slot 0's Back goes to the top-right slot: x = 156 mm, 48 × 76 mm, y from the bottom.
+    // Double-sided 44 mm is 5 × 2 landscape, 4 mm apart. Slot 0's Back goes to the bottom-left
+    // slot (x = 20.5 mm, y = 107 mm), grown 2 mm past the cut line: 52 × 80 mm, y from the bottom.
     const pt = (mm: number) => mmToPt(mm).toFixed(2)
     const numbers = content.match(/-?\d+(\.\d+)?/g)!.map(Number)
     const near = (value: string) => numbers.some((n) => Math.abs(n - Number(value)) < 0.01)
     expect(content).toMatch(/\bre\s+W\s+n\b/)
-    expect(near(pt(156))).toBe(true)
-    expect(near(pt(48))).toBe(true)
-    expect(near(pt(76))).toBe(true)
-    expect(near(pt(297 - 32.5 - 76))).toBe(true)
+    expect(near(pt(18.5))).toBe(true)
+    expect(near(pt(52))).toBe(true)
+    expect(near(pt(80))).toBe(true)
+    expect(near(pt(210 - 105 - 80))).toBe(true)
     // A cut line would stroke (S); the Back page only fills images.
     expect(content).not.toMatch(/\bS\b/)
   })

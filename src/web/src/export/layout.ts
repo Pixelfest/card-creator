@@ -5,13 +5,17 @@ import { CARD_MM, CUT_BORDER_MM } from '../render/units'
 
 export { CARD_MM }
 
-/** Spacer between cut lines, in mm. */
+/** Spacer between cut lines, in mm, on a single-sided page. */
 export const GAP_MM = 2
 /**
- * How far a Back reaches past the Card on every side, in mm, so a front/back misalignment of up
- * to this much still covers the Card. It fills the front's cut border, so it costs no space.
+ * How far a Back reaches past its front's cut line on every side, in mm, so a front/back
+ * misalignment of up to this much still covers the cut line.
  */
-export const BACK_BLEED_MM = CUT_BORDER_MM
+export const BACK_OVERHANG_MM = 2
+/** How far a Back reaches past the Card on every side, in mm: the cut border plus the overhang. */
+export const BACK_BLEED_MM = CUT_BORDER_MM + BACK_OVERHANG_MM
+/** Spacer between cut lines when double-sided, in mm: room for both neighbours' overhang. */
+export const DOUBLE_SIDED_GAP_MM = 2 * BACK_OVERHANG_MM
 /** The least white space kept at each page edge, so printers that can't print to the edge don't clip. */
 export const MIN_MARGIN_MM = 5
 /** The printed Card widths the export accepts, in mm. The height follows from the Card Format. */
@@ -29,6 +33,9 @@ type Size = { width: number; height: number }
 export type PrintLayout = {
   cardMm: Size
   printMm: Size
+  /** Spacer between cut lines, in mm: wider when double-sided, to fit the Backs' overhang. */
+  gapMm: number
+  doubleSided: boolean
   columns: number
   rows: number
   perPage: number
@@ -50,34 +57,40 @@ export function parseCardWidth(value: string): number | undefined {
   return width
 }
 
-/** How many printed cards of `size` mm fit along `available` mm of paper. */
-function fit(available: number, size: number): number {
+/**
+ * How many printed cards of `size` mm fit along `available` mm of paper, `gap` mm apart, keeping
+ * `edge` mm free at both ends.
+ */
+function fit(available: number, size: number, gap: number, edge: number): number {
   // The epsilon lets a grid that fits exactly in exact maths fit despite floating point.
-  return Math.max(0, Math.floor((available - 2 * MIN_MARGIN_MM + GAP_MM) / (size + GAP_MM) + 1e-9))
+  return Math.max(0, Math.floor((available - 2 * edge + gap) / (size + gap) + 1e-9))
 }
 
 /**
  * The layout that puts the most cards on an A4 page at this Card width: the grid that fits
- * inside the minimum margins, in portrait or landscape. Portrait wins a tie.
+ * inside the minimum margins, in portrait or landscape. Portrait wins a tie. Double-sided, the
+ * cards are further apart and the Backs' overhang stays inside the margins too.
  */
-export function printLayout(cardWidthMm: number = CARD_MM.width): PrintLayout {
+export function printLayout(cardWidthMm: number = CARD_MM.width, doubleSided = false): PrintLayout {
   const cardMm = { width: cardWidthMm, height: cardHeightMm(cardWidthMm) }
   const printMm = { width: cardMm.width + 2 * CUT_BORDER_MM, height: cardMm.height + 2 * CUT_BORDER_MM }
+  const gapMm = doubleSided ? DOUBLE_SIDED_GAP_MM : GAP_MM
+  const edge = MIN_MARGIN_MM + (doubleSided ? BACK_OVERHANG_MM : 0)
   const options = (['portrait', 'landscape'] as const).map((orientation) => {
     const pageMm =
       orientation === 'portrait' ? { ...A4_MM } : { width: A4_MM.height, height: A4_MM.width }
-    const columns = fit(pageMm.width, printMm.width)
-    const rows = fit(pageMm.height, printMm.height)
-    return { cardMm, printMm, columns, rows, perPage: columns * rows, orientation, pageMm }
+    const columns = fit(pageMm.width, printMm.width, gapMm, edge)
+    const rows = fit(pageMm.height, printMm.height, gapMm, edge)
+    return { cardMm, printMm, gapMm, doubleSided, columns, rows, perPage: columns * rows, orientation, pageMm }
   })
   return options[1].perPage > options[0].perPage ? options[1] : options[0]
 }
 
 /** The grid's size and the margins that centre it on the page, in mm. */
 export function gridGeometry(layout: PrintLayout) {
-  const { columns, rows, printMm, pageMm } = layout
-  const width = columns * printMm.width + (columns - 1) * GAP_MM
-  const height = rows * printMm.height + (rows - 1) * GAP_MM
+  const { columns, rows, printMm, pageMm, gapMm } = layout
+  const width = columns * printMm.width + (columns - 1) * gapMm
+  const height = rows * printMm.height + (rows - 1) * gapMm
   return {
     width,
     height,
@@ -95,19 +108,24 @@ export function slotOriginMm(layout: PrintLayout, slot: number): { x: number; y:
   const column = slot % layout.columns
   const row = Math.floor(slot / layout.columns)
   return {
-    x: marginX + column * (layout.printMm.width + GAP_MM),
-    y: marginY + row * (layout.printMm.height + GAP_MM),
+    x: marginX + column * (layout.printMm.width + layout.gapMm),
+    y: marginY + row * (layout.printMm.height + layout.gapMm),
   }
 }
 
 /**
  * Where a printed card's Back goes on the back page, in mm from the page's top-left: the
- * Card's area grown by BACK_BLEED_MM on every side, in the mirrored column (the sheet turns
- * over its vertical axis: flip on long edge in portrait, short edge in landscape).
+ * Card's area grown by BACK_BLEED_MM on every side, at the mirrored slot. The sheet always
+ * turns over its long edge (printers align better that way), so in portrait the column is
+ * mirrored and in landscape the row.
  */
 export function backRectMm(layout: PrintLayout, slot: number): { x: number; y: number; width: number; height: number } {
   const column = slot % layout.columns
-  const mirrored = Math.floor(slot / layout.columns) * layout.columns + (layout.columns - 1 - column)
+  const row = Math.floor(slot / layout.columns)
+  const mirrored =
+    layout.orientation === 'portrait'
+      ? row * layout.columns + (layout.columns - 1 - column)
+      : (layout.rows - 1 - row) * layout.columns + column
   const origin = slotOriginMm(layout, mirrored)
   const inset = CUT_BORDER_MM - BACK_BLEED_MM
   return {
@@ -116,11 +134,6 @@ export function backRectMm(layout: PrintLayout, slot: number): { x: number; y: n
     width: layout.cardMm.width + 2 * BACK_BLEED_MM,
     height: layout.cardMm.height + 2 * BACK_BLEED_MM,
   }
-}
-
-/** The printer setting that puts each Back behind its front, for the layout's orientation. */
-export function flipEdge(layout: PrintLayout): 'long' | 'short' {
-  return layout.orientation === 'portrait' ? 'long' : 'short'
 }
 
 /**
