@@ -66,6 +66,60 @@ describe('buildPdf', () => {
   })
 })
 
+describe('buildPdf with Backs', () => {
+  // The images each page draws, as XObject refs, in drawing order.
+  const drawn = (pdf: PDFDocument) =>
+    pdf.getPages().map((page) => {
+      const xObjects = page.node.Resources()?.lookupMaybe(PDFName.of('XObject'), PDFDict)
+      return new Set(xObjects ? xObjects.values().map(String) : [])
+    })
+
+  it('follows every front page with a back page, even one whose cards have no Backs', async () => {
+    const cards = [
+      ...Array(12).fill({ png: PNG_A, text: [] }),
+      { png: PNG_A, text: [], back: PNG_B },
+    ]
+    const pdf = await PDFDocument.load(await buildPdf(cards))
+    expect(pdf.getPageCount()).toBe(4)
+    const [front1, back1, front2, back2] = drawn(pdf)
+    expect(front1.size).toBe(1)
+    expect(back1.size).toBe(0)
+    expect(front2.size).toBe(1)
+    expect(back2.size).toBe(1)
+    expect([...back2][0]).not.toBe([...front2][0])
+  })
+
+  it('stays single-sided without Backs', async () => {
+    const pdf = await PDFDocument.load(await buildPdf([{ png: PNG_A, text: [], back: null }]))
+    expect(pdf.getPageCount()).toBe(1)
+  })
+
+  it('embeds a Back shared by several cards once', async () => {
+    const card = { png: PNG_A, text: [], back: PNG_B }
+    const pdf = await PDFDocument.load(await buildPdf([card, card, { ...card }]))
+    const [, back] = drawn(pdf)
+    expect(back.size).toBe(1)
+  })
+
+  it('draws a Back clipped to its bleed rectangle at the mirrored slot, without cut lines', async () => {
+    const pdf = await PDFDocument.load(await buildPdf([{ png: PNG_A, text: [], back: PNG_B }]))
+    const contents = pdf.getPages()[1].node.Contents()
+    const streams = contents instanceof PDFArray ? contents.asArray().map((r) => pdf.context.lookup(r)) : [contents]
+    const content = streams.map((s) => new TextDecoder().decode(decodePDFRawStream(s as PDFRawStream).decode())).join('\n')
+    // Slot 0's Back goes to the top-right slot: x = 156 mm, 48 × 76 mm, y from the bottom.
+    const pt = (mm: number) => mmToPt(mm).toFixed(2)
+    const numbers = content.match(/-?\d+(\.\d+)?/g)!.map(Number)
+    const near = (value: string) => numbers.some((n) => Math.abs(n - Number(value)) < 0.01)
+    expect(content).toMatch(/\bre\s+W\s+n\b/)
+    expect(near(pt(156))).toBe(true)
+    expect(near(pt(48))).toBe(true)
+    expect(near(pt(76))).toBe(true)
+    expect(near(pt(297 - 32.5 - 76))).toBe(true)
+    // A cut line would stroke (S); the Back page only fills images.
+    expect(content).not.toMatch(/\bS\b/)
+  })
+})
+
 describe('hexToRgb', () => {
   it('reads #rrggbb and #rgb, and falls back to black', () => {
     expect(hexToRgb('#ff8000')).toEqual({ type: 'RGB', red: 1, green: 128 / 255, blue: 0 })

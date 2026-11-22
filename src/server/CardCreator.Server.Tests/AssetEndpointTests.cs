@@ -20,6 +20,7 @@ public class AssetEndpointTests(AppFactory factory)
         Assert.Contains(manifest.Fonts, f => f.DisplayName == "Cinzel Bold");
         Assert.NotEmpty(manifest.SnippetBackgrounds);
         Assert.NotEmpty(manifest.Icons);
+        Assert.NotEmpty(manifest.Backs);
         Assert.NotNull(manifest.Emoji);
     }
 

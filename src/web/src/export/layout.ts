@@ -7,6 +7,11 @@ export { CARD_MM }
 
 /** Spacer between cut lines, in mm. */
 export const GAP_MM = 2
+/**
+ * How far a Back reaches past the Card on every side, in mm, so a front/back misalignment of up
+ * to this much still covers the Card. It fills the front's cut border, so it costs no space.
+ */
+export const BACK_BLEED_MM = CUT_BORDER_MM
 /** The least white space kept at each page edge, so printers that can't print to the edge don't clip. */
 export const MIN_MARGIN_MM = 5
 /** The printed Card widths the export accepts, in mm. The height follows from the Card Format. */
@@ -93,6 +98,41 @@ export function slotOriginMm(layout: PrintLayout, slot: number): { x: number; y:
     x: marginX + column * (layout.printMm.width + GAP_MM),
     y: marginY + row * (layout.printMm.height + GAP_MM),
   }
+}
+
+/**
+ * Where a printed card's Back goes on the back page, in mm from the page's top-left: the
+ * Card's area grown by BACK_BLEED_MM on every side, in the mirrored column (the sheet turns
+ * over its vertical axis: flip on long edge in portrait, short edge in landscape).
+ */
+export function backRectMm(layout: PrintLayout, slot: number): { x: number; y: number; width: number; height: number } {
+  const column = slot % layout.columns
+  const mirrored = Math.floor(slot / layout.columns) * layout.columns + (layout.columns - 1 - column)
+  const origin = slotOriginMm(layout, mirrored)
+  const inset = CUT_BORDER_MM - BACK_BLEED_MM
+  return {
+    x: origin.x + inset,
+    y: origin.y + inset,
+    width: layout.cardMm.width + 2 * BACK_BLEED_MM,
+    height: layout.cardMm.height + 2 * BACK_BLEED_MM,
+  }
+}
+
+/** The printer setting that puts each Back behind its front, for the layout's orientation. */
+export function flipEdge(layout: PrintLayout): 'long' | 'short' {
+  return layout.orientation === 'portrait' ? 'long' : 'short'
+}
+
+/**
+ * Whether the PDF for these Cards is double-sided: at least one printed Card has a Back that the
+ * asset library has. A missing Back prints blank, so on its own it doesn't make the PDF double-sided.
+ */
+export function isDoubleSided(
+  cards: readonly { id: string; copies: number; design: { back?: string | null } }[],
+  backs: readonly { path: string }[] | undefined,
+  selected?: ReadonlySet<string>,
+): boolean {
+  return expandCopies(cards, selected).some((card) => !!card.design.back && !!backs?.some((b) => b.path === card.design.back))
 }
 
 /**

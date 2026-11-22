@@ -8,9 +8,9 @@
 
 Each `.ttf` is the same font as its `.woff2`, decompressed unchanged, for embedding in PDF exports.
 
-## Frames and Snippet backgrounds
+## Frames, Snippet backgrounds and Backs
 
-- **Gold border**, **Silver simple**, **Parchment scroll** and **Dark plate** were made for Card Creator and are licensed with this repository.
+- **Gold border**, **Silver simple**, **Parchment scroll**, **Dark plate** and the **Navy lattice** Back were made for Card Creator and are licensed with this repository.
 
 <!-- Emoji: Twemoji 15.0 (github.com/jdecked/twemoji), graphics CC-BY 4.0. The Credits page
      always shows that attribution itself, so it is not repeated here. -->

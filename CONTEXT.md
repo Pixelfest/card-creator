@@ -44,6 +44,10 @@ Where a Text snippet sits on a Card: `header` (in the top of the Frame), `banner
 **Snippet background**:
 An image chosen from a repository-supplied library, drawn behind a Text snippet; its proportions determine the snippet's height.
 
+**Back**:
+An image chosen from a repository-supplied library, printed on the reverse of a Card. Optional, one per Card. A printed Card with a Back makes the PDF double-sided.
+_Avoid_: backside, reverse
+
 **Cut line**:
 The thin black outline drawn around each Card in the PDF, to guide cutting after printing.
 _Avoid_: border
@@ -52,7 +56,7 @@ _Avoid_: border
 
 - A **Collection** has many **Sets**
 - A **Set** has one **Card format** and many **Cards**
-- A **Card** has one **Artwork**, one **Frame**, and zero or more **Text snippets**
+- A **Card** has one **Artwork**, one **Frame**, zero or more **Text snippets**, and at most one **Back**
 - A **Text snippet** occupies one **Snippet slot**
 
 ## Flagged ambiguities
