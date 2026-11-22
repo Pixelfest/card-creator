@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   BACK_BLEED_MM,
   backRectMm,
+  backsTurned,
   isDoubleSided,
   exportFileName,
   expandCopies,
@@ -202,6 +203,12 @@ describe('Backs', () => {
     // Slot 0 is top-left on the front, so its Back is bottom-left on the back page.
     expect(backRectMm(landscape, 0)).toEqual({ x: 18.5, y: 105, width: 52, height: 80 })
     expect(backRectMm(landscape, 7)).toMatchObject({ x: slotOriginMm(landscape, 2).x - 2, y: slotOriginMm(landscape, 2).y - 2 })
+  })
+
+  it('are turned 180° in landscape only, so they are not upside down after the flip', () => {
+    expect(backsTurned(portrait)).toBe(false)
+    expect(backsTurned(standard)).toBe(false)
+    expect(backsTurned(landscape)).toBe(true)
   })
 
   it('line up with their front when the sheet is turned over its long edge', () => {

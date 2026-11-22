@@ -118,6 +118,22 @@ describe('buildPdf with Backs', () => {
     expect(near(pt(210 - 105 - 80))).toBe(true)
     // A cut line would stroke (S); the Back page only fills images.
     expect(content).not.toMatch(/\bS\b/)
+    // Landscape flips over the top edge, so the Back is turned 180° about its rectangle's centre.
+    const turn = /-1 0 0 -1 (-?[\d.]+) (-?[\d.]+) cm/.exec(content)
+    expect(turn).not.toBeNull()
+    expect(Number(turn![1])).toBeCloseTo(mmToPt(2 * 18.5 + 52), 2)
+    expect(Number(turn![2])).toBeCloseTo(mmToPt(2 * 25 + 80), 2)
+  })
+
+  it('draws Backs upright in portrait', async () => {
+    const pdf = await PDFDocument.load(
+      await buildPdf([{ png: PNG_A, text: [], back: PNG_B }], new Map(), printLayout(30, true)),
+    )
+    const contents = pdf.getPages()[1].node.Contents()
+    const streams = contents instanceof PDFArray ? contents.asArray().map((r) => pdf.context.lookup(r)) : [contents]
+    const content = streams.map((s) => new TextDecoder().decode(decodePDFRawStream(s as PDFRawStream).decode())).join('\n')
+    expect(content).toMatch(/\bre\s+W\s+n\b/)
+    expect(content).not.toMatch(/-1 0 0 -1 [-\d.]+ [-\d.]+ cm/)
   })
 })
 

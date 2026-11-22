@@ -32,15 +32,16 @@ import {
 import { printImage, type PrintImage } from '../render/exportCard'
 import type { SnippetText } from '../render/renderCard'
 import { CARD_HEIGHT, CARD_WIDTH } from '../render/units'
-import { CARD_MM, backRectMm, paginate, printLayout, slotOriginMm, type PrintLayout } from './layout'
+import { CARD_MM, backRectMm, backsTurned, paginate, printLayout, slotOriginMm, type PrintLayout } from './layout'
 import { renderPrintCards, type ExportInput, type PrintCard } from './render'
 
 // Builds the .pdf (docs/spec.md, section 10): an A4 grid with each
 // card image (Card plus its white cut border) drawn at its slot and a ¼ pt black cut line on
 // its edge. Snippet text is drawn over the image as real text in the embedded font,
 // so it prints sharp instead of at the image's 300 DPI. When any card has a Back, every front
-// page is followed by its back page: each Back mirrored behind its card for a long-edge flip,
-// reaching 2 mm past its cut line, with no cut lines.
+// page is followed by its back page: each Back mirrored behind its card for a long-edge flip
+// (turned 180° in landscape, so it isn't upside down), reaching 2 mm past its cut line, with no
+// cut lines.
 
 /** Points (1/72 in), PDF's unit. */
 export function mmToPt(mm: number): number {
@@ -125,19 +126,26 @@ export async function buildPdf(
       if (!card.back) continue
       const mm = backRectMm(layout, slot)
       const rect = { x: mmToPt(mm.x), y: page.height - mmToPt(mm.y + mm.height), width: mmToPt(mm.width), height: mmToPt(mm.height) }
-      drawCover(backPage, await embedImage(card.back), rect)
+      drawCover(backPage, await embedImage(card.back), rect, backsTurned(layout))
     }
   }
   // Without this pdf-lib adds a blank page to an empty document.
   return pdf.save({ addDefaultPage: false })
 }
 
-/** Draws the image scaled to cover the rectangle, centred, and clipped to it. */
-function drawCover(page: PDFPage, image: PDFImage, rect: { x: number; y: number; width: number; height: number }) {
+/** Draws the image scaled to cover the rectangle, centred, and clipped to it; `turned` rotates it 180°. */
+function drawCover(
+  page: PDFPage,
+  image: PDFImage,
+  rect: { x: number; y: number; width: number; height: number },
+  turned = false,
+) {
   const scale = Math.max(rect.width / image.width, rect.height / image.height)
   const width = image.width * scale
   const height = image.height * scale
   page.pushOperators(pushGraphicsState(), rectangle(rect.x, rect.y, rect.width, rect.height), clip(), endPath())
+  // Rotating 180° about the rectangle's centre keeps the image in the same rectangle.
+  if (turned) page.pushOperators(concatTransformationMatrix(-1, 0, 0, -1, 2 * rect.x + rect.width, 2 * rect.y + rect.height))
   page.drawImage(image, { x: rect.x + (rect.width - width) / 2, y: rect.y + (rect.height - height) / 2, width, height })
   page.pushOperators(popGraphicsState())
 }

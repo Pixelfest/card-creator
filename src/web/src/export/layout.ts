@@ -137,6 +137,14 @@ export function backRectMm(layout: PrintLayout, slot: number): { x: number; y: n
 }
 
 /**
+ * Whether the Backs are drawn turned 180°. In landscape the long edge is the top, so turning the
+ * sheet over it would put an upright Back upside down behind its front.
+ */
+export function backsTurned(layout: PrintLayout): boolean {
+  return layout.orientation === 'landscape'
+}
+
+/**
  * Whether the PDF for these Cards is double-sided: at least one printed Card has a Back that the
  * asset library has. A missing Back prints blank, so on its own it doesn't make the PDF double-sided.
  */
