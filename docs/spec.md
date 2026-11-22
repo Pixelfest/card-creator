@@ -207,7 +207,7 @@ Decided in [Export details](https://github.com/Pixelfest/card-creator/issues/10)
 **Backs (double-sided)**
 - A Card may have a **Back** (Back part in the editor: tiles from `assets/backs`, None by default). The stage only ever shows the front.
 - The PDF is double-sided when at least one printed Card has a Back the library has. Each front page is then followed by its back page, so fronts are on odd pages and Backs on even pages; every front page gets a back page, even an empty one.
-- The sheet always turns over its **long edge**, in landscape too: printers align the two sides well only in that direction. So on the back page each Back sits in the mirrored column of the same row in portrait, and in the mirrored row of the same column in landscape.
+- The sheet always turns over its **long edge**, in landscape too: printers align the two sides well only in that direction. So on the back page each Back sits in the mirrored column of the same row in portrait, and in the mirrored row of the same column in landscape. In landscape the long edge is the top, so each Back is also turned 180°, or it would be upside down behind its front.
 - A Back reaches 2 mm past its front's cut line on every side (the Card plus 4 mm), so a front/back misalignment of up to 2 mm doesn't show the cut line. It is clipped to that area. No cut lines and no text on back pages.
 - To fit that overhang, a double-sided PDF puts the cards 4 mm apart instead of 2 mm and keeps the Backs, not just the fronts, inside the 5 mm minimum margins. At 44 mm that is 5 × 2 landscape (10 per page) instead of 4 × 3 portrait.
 - A Card without a Back, or with a Back missing from the library, leaves its place blank. Each unique Back is embedded once.
