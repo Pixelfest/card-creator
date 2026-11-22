@@ -13,6 +13,8 @@ import {
   CARD_WIDTH_RANGE_MM,
   expandCopies,
   exportFileName,
+  flipEdge,
+  isDoubleSided,
   pageCount,
   parseCardWidth,
   printLayout,
@@ -84,7 +86,9 @@ export function ExportDialog({ setName, onClose }: { setName: string; onClose: (
   const layout = printLayout(cardWidth ?? CARD_MM.width)
   const printable = cards.filter((c) => c.copies > 0)
   const cardCount = expandCopies(cards, selected).length
-  const pages = pageCount(cardCount, layout.perPage)
+  const sheets = pageCount(cardCount, layout.perPage)
+  const doubleSided = isDoubleSided(cards, manifest?.backs, selected)
+  const pages = doubleSided ? sheets * 2 : sheets
   const warnings = text
     ? cards
         .filter((c) => selected.has(c.id) && c.copies > 0)
@@ -210,6 +214,7 @@ export function ExportDialog({ setName, onClose }: { setName: string; onClose: (
 
       <p className={styles.totals} aria-live="polite">
         {cardCount} {cardCount === 1 ? 'card' : 'cards'} on {pages} {pages === 1 ? 'page' : 'pages'}
+        {doubleSided && ` (${sheets} ${sheets === 1 ? 'sheet' : 'sheets'}, double-sided)`}
       </p>
 
       {!text && <p className={styles.muted}>Loading fonts…</p>}
@@ -230,6 +235,9 @@ export function ExportDialog({ setName, onClose }: { setName: string; onClose: (
       )}
 
       <p className={styles.reminder}>Print at 100% / Actual size: don't use Fit to page.</p>
+      {doubleSided && (
+        <p className={styles.reminder}>Print double-sided, flip on {flipEdge(layout)} edge.</p>
+      )}
 
       {!online && <p role="alert">You're offline. Export needs a connection.</p>}
 

@@ -16,3 +16,8 @@
   object-fit: fill;
 }
 
+/* Backs are any size; they print scaled to cover, so the thumbnail crops the same way. */
+.cover {
+  object-fit: cover;
+}
+

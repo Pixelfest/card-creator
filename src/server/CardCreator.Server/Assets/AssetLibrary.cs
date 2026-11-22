@@ -25,7 +25,7 @@ public record AssetFile(
 /// <summary>
 /// The asset library, scanned once at startup:
 /// <c>frames/44x72/*.png</c>, <c>fonts/*.woff2|ttf|otf</c>, <c>snippet-backgrounds/*.png</c>,
-/// <c>icons/*.png</c>, <c>emoji/*.svg</c> (Twemoji) and an optional <c>CREDITS.md</c>.
+/// <c>icons/*.png</c>, <c>backs/*.png</c>, <c>emoji/*.svg</c> (Twemoji) and an optional <c>CREDITS.md</c>.
 /// Font files that differ only in extension are one font: the browser draws the .woff2 and
 /// the PDF export embeds the .ttf (or .otf).
 /// </summary>
@@ -44,6 +44,7 @@ public sealed class AssetLibrary
         IReadOnlyList<AssetFile> fonts,
         IReadOnlyList<AssetFile> snippetBackgrounds,
         IReadOnlyList<AssetFile> icons,
+        IReadOnlyList<AssetFile> backs,
         string? emojiFolder,
         string? emojiHash,
         string credits
@@ -53,6 +54,7 @@ public sealed class AssetLibrary
         Fonts = fonts;
         SnippetBackgrounds = snippetBackgrounds;
         Icons = icons;
+        Backs = backs;
         EmojiFolder = emojiFolder;
         EmojiHash = emojiHash;
         Credits = credits;
@@ -61,6 +63,7 @@ public sealed class AssetLibrary
             .Concat(fonts.Select(f => f.Embed).OfType<AssetFile>().Where(e => fonts.All(f => f.Path != e.Path)))
             .Concat(snippetBackgrounds)
             .Concat(icons)
+            .Concat(backs)
             .ToDictionary(a => a.Path, StringComparer.Ordinal);
     }
 
@@ -70,6 +73,9 @@ public sealed class AssetLibrary
 
     /// <summary>Corner icons: PNGs of any size; the editor draws them by width.</summary>
     public IReadOnlyList<AssetFile> Icons { get; }
+
+    /// <summary>Card Backs: PNGs of any size; the PDF scales them to cover the Back area.</summary>
+    public IReadOnlyList<AssetFile> Backs { get; }
 
     /// <summary>The Twemoji folder, or null when there are no emoji.</summary>
     public string? EmojiFolder { get; }
@@ -102,13 +108,14 @@ public sealed class AssetLibrary
         if (!Directory.Exists(root))
         {
             logger.LogWarning("Asset folder {Root} does not exist; the asset library is empty", root);
-            return new AssetLibrary([], [], [], [], null, null, "");
+            return new AssetLibrary([], [], [], [], [], null, null, "");
         }
 
         var frames = ScanImages(root, "frames/44x72", logger, requireFrameRatio: true);
         var fonts = ScanFonts(root);
         var backgrounds = ScanImages(root, "snippet-backgrounds", logger, requireFrameRatio: false);
         var icons = ScanImages(root, "icons", logger, requireFrameRatio: false);
+        var backs = ScanImages(root, "backs", logger, requireFrameRatio: false);
 
         var emojiFolder = System.IO.Path.Combine(root, "emoji");
         var emojiFiles = Files(root, "emoji", ".svg").ToList();
@@ -118,11 +125,12 @@ public sealed class AssetLibrary
         var credits = File.Exists(creditsPath) ? File.ReadAllText(creditsPath) : "";
 
         logger.LogInformation(
-            "Asset library: {Frames} frames, {Fonts} fonts, {Backgrounds} snippet backgrounds, {Icons} icons, {Emoji} emoji",
+            "Asset library: {Frames} frames, {Fonts} fonts, {Backgrounds} snippet backgrounds, {Icons} icons, {Backs} backs, {Emoji} emoji",
             frames.Count,
             fonts.Count,
             backgrounds.Count,
             icons.Count,
+            backs.Count,
             emojiFiles.Count
         );
         return new AssetLibrary(
@@ -130,6 +138,7 @@ public sealed class AssetLibrary
             fonts,
             backgrounds,
             icons,
+            backs,
             emojiFiles.Count == 0 ? null : emojiFolder,
             emojiHash,
             credits

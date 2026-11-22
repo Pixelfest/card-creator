@@ -129,6 +129,21 @@ public sealed class AssetLibraryTests : IDisposable
     }
 
     [Fact]
+    public void Backs_are_listed_whatever_their_size_and_are_served_by_path()
+    {
+        Write("backs/blue-swirl.png", Png(600, 950));
+        Write("backs/square.png", Png(500, 500));
+        Write("backs/not-a-png.png", "nope"u8.ToArray());
+
+        var library = Scan();
+
+        Assert.Equal(["Blue swirl", "Square"], library.Backs.Select(b => b.DisplayName).Order());
+        Assert.Equal(1.0, library.Backs.Single(b => b.Path == "backs/square.png").AspectRatio);
+        var swirl = library.Backs.Single(b => b.Path == "backs/blue-swirl.png");
+        Assert.Same(swirl, library.Find(swirl.Hash, swirl.Path));
+    }
+
+    [Fact]
     public void The_hashed_url_changes_when_the_file_changes()
     {
         Write("frames/44x72/gold.png", Png(520, 850, salt: 1));

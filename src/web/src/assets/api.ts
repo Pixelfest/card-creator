@@ -20,6 +20,8 @@ export type AssetManifest = {
   fonts: Asset[]
   snippetBackgrounds: Asset[]
   icons: Asset[]
+  /** Card Backs: PNGs of any size. */
+  backs: Asset[]
   /** Twemoji SVGs live at `${baseUrl}${codepoints}.svg`; null when there are none. */
   emoji: { baseUrl: string } | null
 }

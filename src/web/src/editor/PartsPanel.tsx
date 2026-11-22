@@ -3,6 +3,7 @@ import { cardWarnings, type CardPart } from '../render/warnings'
 import { useTextResources } from '../text/useTextResources'
 import * as actions from './actions'
 import { ArtworkProperties } from './ArtworkProperties'
+import { BackProperties } from './BackProperties'
 import { CardProperties } from './CardProperties'
 import { CornerIconProperties } from './CornerIconProperties'
 import { useEditor } from './editorHooks'
@@ -18,8 +19,9 @@ const PART_LABELS: Record<CardPart, string> = {
   frame: 'Frame',
   cornerIcons: 'Corner icons',
   ...SLOT_LABELS,
+  back: 'Back',
 }
-const PARTS: CardPart[] = ['card', 'artwork', 'frame', 'cornerIcons', ...SNIPPET_SLOTS]
+const PARTS: CardPart[] = ['card', 'artwork', 'frame', 'cornerIcons', ...SNIPPET_SLOTS, 'back']
 
 const isSlot = (part: CardPart): part is SnippetSlot => (SNIPPET_SLOTS as readonly string[]).includes(part)
 
@@ -81,6 +83,8 @@ export function PartsPanel() {
           <FrameProperties />
         ) : shown === 'cornerIcons' ? (
           <CornerIconProperties />
+        ) : shown === 'back' ? (
+          <BackProperties />
         ) : (
           <SnippetProperties slot={shown} />
         )}

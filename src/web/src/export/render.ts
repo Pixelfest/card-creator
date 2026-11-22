@@ -11,8 +11,11 @@ import { expandCopies, type PrintLayout } from './layout'
 // The rendering half of export: render each selected Card once, then hand the printed list
 // (each Card's Copies consecutive) to the PDF builder.
 
-/** One rendered Card: its print PNG, plus the text the PDF draws over it as vector text. */
-export type PrintCard = { png: Uint8Array; text: SnippetText[] }
+/**
+ * One rendered Card: its print PNG, the text the PDF draws over it as vector text, and its Back's
+ * PNG file (null or absent without one, or when the library no longer has it).
+ */
+export type PrintCard = { png: Uint8Array; text: SnippetText[]; back?: Uint8Array | null }
 
 export type ExportProgress = { done: number; total: number }
 
@@ -49,6 +52,22 @@ export async function renderPrintCards<T>(
   const printed = new Map<string, PrintCard>()
   const image = printImage(layout.cardMm.width)
   const embeddable = new Set(manifest?.fonts.filter((f) => f.embedUrl).map((f) => f.path))
+  const backs = new Map<string, Promise<Uint8Array>>()
+  const loadBack = (path: string | null | undefined, cardName: string) => {
+    const url = path ? manifest?.backs.find((b) => b.path === path)?.url : undefined
+    if (!path || !url) return null
+    let bytes = backs.get(path)
+    if (!bytes) {
+      bytes = fetch(url).then(async (response) => {
+        if (!response.ok) throw new Error()
+        return new Uint8Array(await response.arrayBuffer())
+      })
+      backs.set(path, bytes)
+    }
+    return bytes.catch(() => {
+      throw new Error(`Couldn't load the Back for “${cardName}”.`)
+    })
+  }
 
   onProgress?.({ done: 0, total })
   for (const [i, card] of unique.entries()) {
@@ -82,7 +101,8 @@ export async function renderPrintCards<T>(
       runs.push(placed)
     }
     const blob = await renderCardToPng(card.design, { images, text, vectorText: vector }, image)
-    printed.set(card.id, { png: new Uint8Array(await blob.arrayBuffer()), text: runs })
+    const back = await loadBack(card.design.back, card.name)
+    printed.set(card.id, { png: new Uint8Array(await blob.arrayBuffer()), text: runs, back })
     onProgress?.({ done: i + 1, total })
   }
 

@@ -25,6 +25,7 @@ const assets = {
   ],
   snippetBackgrounds: [],
   icons: [],
+  backs: [{ path: 'backs/navy-lattice.png', displayName: 'Navy lattice', url: '/assets/b1/backs/navy-lattice.png', aspectRatio: 0.63 }],
   emoji: null,
 }
 const design = { fill: '#ffffff', frame: 'frames/44x72/gold-border.png', artwork: null, snippets: {} }
@@ -252,6 +253,37 @@ describe('SetEditorPage', () => {
     await waitFor(() => expect(calls(fetchMock, 'PUT')).toHaveLength(1))
     expect(JSON.parse(String(calls(fetchMock, 'PUT')[0][1]?.body)).design).toMatchObject({ frame: null })
     expect(within(tiles).getByRole('radio', { name: 'None' })).toHaveAttribute('aria-checked', 'true')
+  })
+
+  it('picks a Back from the tiles and saves it in the design', async () => {
+    const fetchMock = stubEditor({
+      [`PUT ${cardsUrl}/${dragon.id}`]: (init) => ({ body: { ...dragon, ...JSON.parse(String(init?.body)), version: 2 } }),
+    })
+    renderWithQuery(<SetEditorPage collectionId={collectionId} setId={setId} />)
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Back' }))
+    const tiles = await screen.findByRole('radiogroup', { name: 'Back' })
+    expect(within(tiles).getByRole('radio', { name: 'None' })).toHaveAttribute('aria-checked', 'true')
+
+    fireEvent.click(within(tiles).getByRole('radio', { name: 'Navy lattice' }))
+
+    await waitFor(() => expect(calls(fetchMock, 'PUT')).toHaveLength(1))
+    expect(JSON.parse(String(calls(fetchMock, 'PUT')[0][1]?.body)).design).toMatchObject({ back: 'backs/navy-lattice.png' })
+  })
+
+  it('flags a card whose Back is missing on the Back control', async () => {
+    const lost = serverCard('cardccccccccccccccccc', 'Lost', 0)
+    stubApi({
+      [`GET /api/collections/${collectionId}`]: { body: collection },
+      [`GET ${setUrl}`]: { body: set },
+      [`GET ${cardsUrl}`]: { body: [{ ...lost, design: { ...design, back: 'backs/deleted.png' } }] },
+      'GET /api/assets': { body: assets },
+    })
+    renderWithQuery(<SetEditorPage collectionId={collectionId} setId={setId} />)
+
+    expect(await screen.findByRole('img', { name: 'Lost has warnings' })).toHaveTextContent('⚠')
+    fireEvent.click(screen.getByRole('button', { name: /^Back/ }))
+    expect(await screen.findByRole('note')).toHaveTextContent('The Back “deleted.png” is missing.')
   })
 
   it('flags a card whose Frame is missing, in the list and on the Frame control', async () => {
@@ -587,6 +619,15 @@ describe('SetEditorPage', () => {
       openExport([{ ...dragon, copies: 12 }, { ...knight, copies: 1 }])
       fireEvent.click(await screen.findByRole('button', { name: 'Export…' }))
       expect(screen.getByText('13 cards on 2 pages')).toBeInTheDocument()
+      expect(screen.queryByText(/double-sided/)).not.toBeInTheDocument()
+    })
+
+    it('counts back pages and says how to flip when a Card has a Back', async () => {
+      const backed = { ...dragon, copies: 12, design: { ...design, back: 'backs/navy-lattice.png' } }
+      openExport([backed, { ...knight, copies: 1 }])
+      fireEvent.click(await screen.findByRole('button', { name: 'Export…' }))
+      expect(await screen.findByText('13 cards on 4 pages (2 sheets, double-sided)')).toBeInTheDocument()
+      expect(screen.getByText('Print double-sided, flip on long edge.')).toBeInTheDocument()
     })
 
     it('shows an error with Retry when the export fails, and downloads nothing', async () => {

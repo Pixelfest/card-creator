@@ -55,7 +55,7 @@ describe('SetTiles', () => {
     stubApi({
       [`GET ${sets}`]: { body: [withCards] },
       [`GET ${sets}/${dragons.id}/cards`]: { body: [card('cardbbbbbbbbbbbbbbbbb', 'Knight', 1), card('cardaaaaaaaaaaaaaaaaa', 'Dragon', 0)] },
-      'GET /api/assets': { body: { frames: [], fonts: [], icons: [], snippetBackgrounds: [] } },
+      'GET /api/assets': { body: { frames: [], fonts: [], icons: [], backs: [], snippetBackgrounds: [] } },
     })
 
     renderWithQuery(<SetTiles collectionId={collectionId} />)

@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import {
+  BACK_BLEED_MM,
+  backRectMm,
+  flipEdge,
+  isDoubleSided,
   exportFileName,
   expandCopies,
   gridGeometry,
@@ -143,6 +147,49 @@ describe('paginate', () => {
   it('counts pages', () => {
     expect([0, 1, 12, 13, 24, 25].map((n) => pageCount(n, 12))).toEqual([0, 1, 1, 2, 2, 3])
     expect(pageCount(9, 4)).toBe(3)
+  })
+})
+
+describe('Backs', () => {
+  it('bleed 2 mm past the Card, exactly filling the front slot', () => {
+    expect(BACK_BLEED_MM).toBe(2)
+    const back = backRectMm(standard, 0)
+    expect({ width: back.width, height: back.height }).toEqual(standard.printMm)
+  })
+
+  it('sit in the mirrored column of the same row', () => {
+    // Slot 0 is top-left on the front, so its Back is top-right on the back page.
+    expect(backRectMm(standard, 0)).toEqual({ ...slotOriginMm(standard, 3), width: 48, height: 76 })
+    expect(backRectMm(standard, 3)).toEqual({ ...slotOriginMm(standard, 0), width: 48, height: 76 })
+    expect(backRectMm(standard, 5)).toEqual({ ...slotOriginMm(standard, 6), width: 48, height: 76 })
+  })
+
+  it('line up with their front when the sheet is turned over its vertical axis', () => {
+    for (const layout of [standard, printLayout(57)]) {
+      for (let slot = 0; slot < layout.perPage; slot++) {
+        const front = slotOriginMm(layout, slot)
+        const back = backRectMm(layout, slot)
+        // Turned over, x becomes page width − x; the centres must coincide.
+        expect(layout.pageMm.width - (back.x + back.width / 2)).toBeCloseTo(front.x + layout.printMm.width / 2, 9)
+        expect(back.y + back.height / 2).toBeCloseTo(front.y + layout.printMm.height / 2, 9)
+      }
+    }
+  })
+
+  it('need flip on long edge in portrait and short edge in landscape', () => {
+    expect(flipEdge(standard)).toBe('long')
+    expect(flipEdge(printLayout(57))).toBe('short')
+  })
+
+  it('make the PDF double-sided only when a printed Card has a Back the library has', () => {
+    const backs = [{ path: 'backs/navy.png' }]
+    const card = (id: string, back: string | null, copies = 1) => ({ id, copies, design: { back } })
+    expect(isDoubleSided([card('a', null), card('b', 'backs/navy.png')], backs)).toBe(true)
+    expect(isDoubleSided([card('a', null), card('b', 'backs/navy.png', 0)], backs)).toBe(false)
+    expect(isDoubleSided([card('a', null), card('b', 'backs/navy.png')], backs, new Set(['a']))).toBe(false)
+    expect(isDoubleSided([card('a', 'backs/deleted.png')], backs)).toBe(false)
+    expect(isDoubleSided([{ id: 'a', copies: 1, design: {} }], backs)).toBe(false)
+    expect(isDoubleSided([card('b', 'backs/navy.png')], undefined)).toBe(false)
   })
 })
 
