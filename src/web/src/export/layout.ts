@@ -36,6 +36,12 @@ export type PrintLayout = {
   /** Spacer between cut lines, in mm: wider when double-sided, to fit the Backs' overhang. */
   gapMm: number
   doubleSided: boolean
+  /**
+   * Whether the Backs are drawn turned 180°. On by default in landscape: the long edge is the
+   * top, so turning the sheet over it would put an upright Back upside down behind its front.
+   * The Export dialog lets the user change it for printers that turn the page anyway.
+   */
+  turnBacks: boolean
   columns: number
   rows: number
   perPage: number
@@ -81,7 +87,8 @@ export function printLayout(cardWidthMm: number = CARD_MM.width, doubleSided = f
       orientation === 'portrait' ? { ...A4_MM } : { width: A4_MM.height, height: A4_MM.width }
     const columns = fit(pageMm.width, printMm.width, gapMm, edge)
     const rows = fit(pageMm.height, printMm.height, gapMm, edge)
-    return { cardMm, printMm, gapMm, doubleSided, columns, rows, perPage: columns * rows, orientation, pageMm }
+    const turnBacks = orientation === 'landscape'
+    return { cardMm, printMm, gapMm, doubleSided, turnBacks, columns, rows, perPage: columns * rows, orientation, pageMm }
   })
   return options[1].perPage > options[0].perPage ? options[1] : options[0]
 }
@@ -134,14 +141,6 @@ export function backRectMm(layout: PrintLayout, slot: number): { x: number; y: n
     width: layout.cardMm.width + 2 * BACK_BLEED_MM,
     height: layout.cardMm.height + 2 * BACK_BLEED_MM,
   }
-}
-
-/**
- * Whether the Backs are drawn turned 180°. In landscape the long edge is the top, so turning the
- * sheet over it would put an upright Back upside down behind its front.
- */
-export function backsTurned(layout: PrintLayout): boolean {
-  return layout.orientation === 'landscape'
 }
 
 /**
