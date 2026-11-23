@@ -125,15 +125,15 @@ describe('buildPdf with Backs', () => {
     expect(Number(turn![2])).toBeCloseTo(mmToPt(2 * 25 + 80), 2)
   })
 
-  it('draws Backs upright in portrait', async () => {
-    const pdf = await PDFDocument.load(
-      await buildPdf([{ png: PNG_A, text: [], back: PNG_B }], new Map(), printLayout(30, true)),
-    )
-    const contents = pdf.getPages()[1].node.Contents()
-    const streams = contents instanceof PDFArray ? contents.asArray().map((r) => pdf.context.lookup(r)) : [contents]
-    const content = streams.map((s) => new TextDecoder().decode(decodePDFRawStream(s as PDFRawStream).decode())).join('\n')
-    expect(content).toMatch(/\bre\s+W\s+n\b/)
-    expect(content).not.toMatch(/-1 0 0 -1 [-\d.]+ [-\d.]+ cm/)
+  it('draws Backs upright in portrait, or in landscape when the turn is switched off', async () => {
+    for (const layout of [printLayout(30, true), { ...printLayout(44, true), turnBacks: false }]) {
+      const pdf = await PDFDocument.load(await buildPdf([{ png: PNG_A, text: [], back: PNG_B }], new Map(), layout))
+      const contents = pdf.getPages()[1].node.Contents()
+      const streams = contents instanceof PDFArray ? contents.asArray().map((r) => pdf.context.lookup(r)) : [contents]
+      const content = streams.map((s) => new TextDecoder().decode(decodePDFRawStream(s as PDFRawStream).decode())).join('\n')
+      expect(content).toMatch(/\bre\s+W\s+n\b/)
+      expect(content).not.toMatch(/-1 0 0 -1 [-\d.]+ [-\d.]+ cm/)
+    }
   })
 })
 

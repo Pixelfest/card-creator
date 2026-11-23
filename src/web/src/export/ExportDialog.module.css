@@ -83,6 +83,14 @@
   color: var(--muted);
 }
 
+.turn {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  font-size: var(--text-sm);
+}
+
 .progress {
   width: 100%;
 }

@@ -630,6 +630,28 @@ describe('SetEditorPage', () => {
       expect(screen.getByText('Print double-sided, flip on long edge.')).toBeInTheDocument()
     })
 
+    it('turns landscape Backs 180° by default, and remembers when that is switched off', async () => {
+      window.localStorage.clear()
+      const backed = { ...dragon, design: { ...design, back: 'backs/navy-lattice.png' } }
+      openExport([backed])
+      fireEvent.click(await screen.findByRole('button', { name: 'Export…' }))
+      // Double-sided at 44 mm is landscape.
+      const turn = await screen.findByRole('checkbox', { name: /Turn Backs 180°/ })
+      expect(turn).toBeChecked()
+      expect(turn).toHaveAccessibleName(/for landscape/)
+
+      fireEvent.click(turn)
+      expect(turn).not.toBeChecked()
+      expect(window.localStorage.getItem('cardCreator.export.turnBacks.landscape')).toBe('false')
+      window.localStorage.clear()
+    })
+
+    it('has no Turn Backs checkbox without Backs', async () => {
+      openExport([dragon])
+      fireEvent.click(await screen.findByRole('button', { name: 'Export…' }))
+      expect(screen.queryByRole('checkbox', { name: /Turn Backs/ })).not.toBeInTheDocument()
+    })
+
     it('shows an error with Retry when the export fails, and downloads nothing', async () => {
       openExport([dragon])
       const click = vi.spyOn(HTMLAnchorElement.prototype, 'click')
