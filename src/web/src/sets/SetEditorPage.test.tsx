@@ -630,26 +630,27 @@ describe('SetEditorPage', () => {
       expect(screen.getByText('Print double-sided, flip on long edge.')).toBeInTheDocument()
     })
 
-    it('turns landscape Backs 180° by default, and remembers when that is switched off', async () => {
+    it('lets the user flip on the long or short edge, long by default, and remembers the choice', async () => {
       window.localStorage.clear()
       const backed = { ...dragon, design: { ...design, back: 'backs/navy-lattice.png' } }
       openExport([backed])
       fireEvent.click(await screen.findByRole('button', { name: 'Export…' }))
-      // Double-sided at 44 mm is landscape.
-      const turn = await screen.findByRole('checkbox', { name: /Turn Backs 180°/ })
-      expect(turn).toBeChecked()
-      expect(turn).toHaveAccessibleName(/for landscape/)
+      const long = await screen.findByRole('radio', { name: 'Long edge' })
+      const short = screen.getByRole('radio', { name: 'Short edge' })
+      expect(long).toBeChecked()
+      expect(short).not.toBeChecked()
 
-      fireEvent.click(turn)
-      expect(turn).not.toBeChecked()
-      expect(window.localStorage.getItem('cardCreator.export.turnBacks.landscape')).toBe('false')
+      fireEvent.click(short)
+      expect(short).toBeChecked()
+      expect(screen.getByText('Print double-sided, flip on short edge.')).toBeInTheDocument()
+      expect(window.localStorage.getItem('cardCreator.export.flipEdge')).toBe('short')
       window.localStorage.clear()
     })
 
-    it('has no Turn Backs checkbox without Backs', async () => {
+    it('has no flip edge choice without Backs', async () => {
       openExport([dragon])
       fireEvent.click(await screen.findByRole('button', { name: 'Export…' }))
-      expect(screen.queryByRole('checkbox', { name: /Turn Backs/ })).not.toBeInTheDocument()
+      expect(screen.queryByRole('radio', { name: /edge/ })).not.toBeInTheDocument()
     })
 
     it('shows an error with Retry when the export fails, and downloads nothing', async () => {

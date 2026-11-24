@@ -24,6 +24,8 @@ export const CARD_WIDTH_RANGE_MM = { min: 25, max: 120 }
 export const A4_MM = { width: 210, height: 297 }
 
 export type Orientation = 'portrait' | 'landscape'
+/** The paper edge a double-sided sheet turns over, as the printer's duplex setting names it. */
+export type FlipEdge = 'long' | 'short'
 type Size = { width: number; height: number }
 
 /**
@@ -36,12 +38,8 @@ export type PrintLayout = {
   /** Spacer between cut lines, in mm: wider when double-sided, to fit the Backs' overhang. */
   gapMm: number
   doubleSided: boolean
-  /**
-   * Whether the Backs are drawn turned 180°. On by default in landscape: the long edge is the
-   * top, so turning the sheet over it would put an upright Back upside down behind its front.
-   * The Export dialog lets the user change it for printers that turn the page anyway.
-   */
-  turnBacks: boolean
+  /** The edge the sheet turns over when double-sided, chosen in the Export dialog. */
+  flipEdge: FlipEdge
   columns: number
   rows: number
   perPage: number
@@ -77,7 +75,11 @@ function fit(available: number, size: number, gap: number, edge: number): number
  * inside the minimum margins, in portrait or landscape. Portrait wins a tie. Double-sided, the
  * cards are further apart and the Backs' overhang stays inside the margins too.
  */
-export function printLayout(cardWidthMm: number = CARD_MM.width, doubleSided = false): PrintLayout {
+export function printLayout(
+  cardWidthMm: number = CARD_MM.width,
+  doubleSided = false,
+  flipEdge: FlipEdge = 'long',
+): PrintLayout {
   const cardMm = { width: cardWidthMm, height: cardHeightMm(cardWidthMm) }
   const printMm = { width: cardMm.width + 2 * CUT_BORDER_MM, height: cardMm.height + 2 * CUT_BORDER_MM }
   const gapMm = doubleSided ? DOUBLE_SIDED_GAP_MM : GAP_MM
@@ -87,8 +89,7 @@ export function printLayout(cardWidthMm: number = CARD_MM.width, doubleSided = f
       orientation === 'portrait' ? { ...A4_MM } : { width: A4_MM.height, height: A4_MM.width }
     const columns = fit(pageMm.width, printMm.width, gapMm, edge)
     const rows = fit(pageMm.height, printMm.height, gapMm, edge)
-    const turnBacks = orientation === 'landscape'
-    return { cardMm, printMm, gapMm, doubleSided, turnBacks, columns, rows, perPage: columns * rows, orientation, pageMm }
+    return { cardMm, printMm, gapMm, doubleSided, flipEdge, columns, rows, perPage: columns * rows, orientation, pageMm }
   })
   return options[1].perPage > options[0].perPage ? options[1] : options[0]
 }
@@ -121,18 +122,33 @@ export function slotOriginMm(layout: PrintLayout, slot: number): { x: number; y:
 }
 
 /**
+ * Whether the sheet turns over its vertical axis (side to side, like a book page): the long edge
+ * in portrait, the short edge in landscape. Otherwise it turns over its horizontal axis (top to
+ * bottom, like a calendar).
+ */
+function turnsSideways(layout: PrintLayout): boolean {
+  return (layout.orientation === 'portrait') === (layout.flipEdge === 'long')
+}
+
+/**
+ * Whether the Backs are drawn turned 180°: when the sheet turns top to bottom, an upright Back
+ * would come out upside down behind its front.
+ */
+export function backsTurned(layout: PrintLayout): boolean {
+  return !turnsSideways(layout)
+}
+
+/**
  * Where a printed card's Back goes on the back page, in mm from the page's top-left: the
- * Card's area grown by BACK_BLEED_MM on every side, at the mirrored slot. The sheet always
- * turns over its long edge (printers align better that way), so in portrait the column is
- * mirrored and in landscape the row.
+ * Card's area grown by BACK_BLEED_MM on every side, at the mirrored slot. Turning sideways
+ * mirrors the column, turning top to bottom mirrors the row.
  */
 export function backRectMm(layout: PrintLayout, slot: number): { x: number; y: number; width: number; height: number } {
   const column = slot % layout.columns
   const row = Math.floor(slot / layout.columns)
-  const mirrored =
-    layout.orientation === 'portrait'
-      ? row * layout.columns + (layout.columns - 1 - column)
-      : (layout.rows - 1 - row) * layout.columns + column
+  const mirrored = turnsSideways(layout)
+    ? row * layout.columns + (layout.columns - 1 - column)
+    : (layout.rows - 1 - row) * layout.columns + column
   const origin = slotOriginMm(layout, mirrored)
   const inset = CUT_BORDER_MM - BACK_BLEED_MM
   return {

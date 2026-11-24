@@ -207,7 +207,8 @@ Decided in [Export details](https://github.com/Pixelfest/card-creator/issues/10)
 **Backs (double-sided)**
 - A Card may have a **Back** (Back part in the editor: tiles from `assets/backs`, None by default). The stage only ever shows the front.
 - The PDF is double-sided when at least one printed Card has a Back the library has. Each front page is then followed by its back page, so fronts are on odd pages and Backs on even pages; every front page gets a back page, even an empty one.
-- The sheet always turns over its **long edge**, in landscape too: printers align the two sides well only in that direction. So on the back page each Back sits in the mirrored column of the same row in portrait, and in the mirrored row of the same column in landscape. In landscape the long edge is the top, so by default each Back is also turned 180°, or it would be upside down behind its front. Some printers turn the page themselves, so the dialog has a **Turn Backs 180°** checkbox to switch this.
+- The user picks the edge the sheet turns over, **long** (default) or **short**, to match the printer's duplex setting. Many printers align the two sides best on the long edge.
+- When the sheet turns side to side (long edge in portrait, short edge in landscape), each Back sits in the mirrored column of the same row, upright. When it turns top to bottom (short edge in portrait, long edge in landscape), each Back sits in the mirrored row of the same column, turned 180° so it isn't upside down behind its front.
 - A Back reaches 2 mm past its front's cut line on every side (the Card plus 4 mm), so a front/back misalignment of up to 2 mm doesn't show the cut line. It is clipped to that area. No cut lines and no text on back pages.
 - To fit that overhang, a double-sided PDF puts the cards 4 mm apart instead of 2 mm and keeps the Backs, not just the fronts, inside the 5 mm minimum margins. At 44 mm that is 5 × 2 landscape (10 per page) instead of 4 × 3 portrait.
 - A Card without a Back, or with a Back missing from the library, leaves its place blank. Each unique Back is embedded once.
@@ -220,7 +221,7 @@ Decided in [Export details](https://github.com/Pixelfest/card-creator/issues/10)
 1. A checkbox per Card, all checked by default. Copies-0 Cards are unchecked and disabled.
 2. The Card width in mm, with the resulting height, the cards per page and the orientation, and a reset to 44 mm. The last width used is remembered in this browser. An empty or out-of-range width blocks the export. A running total of cards and pages; when double-sided, the pages include the back pages, followed by the sheets ("13 cards on 4 pages (2 sheets, double-sided)").
 3. Warnings (missing assets, text that doesn't fit) for the selected Cards, with **Export anyway**.
-4. The reminder "Print at 100% / Actual size: don't use Fit to page", and when double-sided "Print double-sided, flip on long edge." (in either orientation), with a **Turn Backs 180°** checkbox: on by default in landscape, off in portrait. The choice is remembered in this browser, separately for portrait and landscape.
+4. The reminder "Print at 100% / Actual size: don't use Fit to page", and when double-sided a **Flip on: Long edge / Short edge** choice (long by default, remembered in this browser) and "Print double-sided, flip on {long|short} edge."
 5. A progress bar, then the download `{Set name}.pdf`.
 
 ## 11. Errors and offline
