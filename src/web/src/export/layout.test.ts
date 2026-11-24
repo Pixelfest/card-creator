@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   BACK_BLEED_MM,
   backRectMm,
+  backsTurned,
   isDoubleSided,
   exportFileName,
   expandCopies,
@@ -204,21 +205,40 @@ describe('Backs', () => {
     expect(backRectMm(landscape, 7)).toMatchObject({ x: slotOriginMm(landscape, 2).x - 2, y: slotOriginMm(landscape, 2).y - 2 })
   })
 
-  it('are turned 180° by default in landscape only, so they are not upside down after the flip', () => {
-    expect(portrait.turnBacks).toBe(false)
-    expect(standard.turnBacks).toBe(false)
-    expect(landscape.turnBacks).toBe(true)
+  it('flip on the long edge by default', () => {
+    expect(portrait.flipEdge).toBe('long')
+    expect(landscape.flipEdge).toBe('long')
   })
 
-  it('line up with their front when the sheet is turned over its long edge', () => {
-    for (const layout of [standard, portrait, printLayout(57), landscape]) {
+  it('are turned 180° only when the sheet turns top to bottom', () => {
+    expect(backsTurned(portrait)).toBe(false)
+    expect(backsTurned(landscape)).toBe(true)
+    expect(backsTurned(printLayout(30, true, 'short'))).toBe(true)
+    expect(backsTurned(printLayout(44, true, 'short'))).toBe(false)
+  })
+
+  it('sit in the mirrored row in portrait and the mirrored column in landscape on a short-edge flip', () => {
+    const shortPortrait = printLayout(30, true, 'short')
+    const shortLandscape = printLayout(44, true, 'short')
+    const lastRow = (shortPortrait.rows - 1) * shortPortrait.columns
+    expect(backRectMm(shortPortrait, 0)).toMatchObject({ x: slotOriginMm(shortPortrait, lastRow).x - 2, y: slotOriginMm(shortPortrait, lastRow).y - 2 })
+    expect(backRectMm(shortLandscape, 0)).toMatchObject({ x: slotOriginMm(shortLandscape, 4).x - 2, y: slotOriginMm(shortLandscape, 4).y - 2 })
+  })
+
+  it('line up with their front when the sheet is turned over either edge', () => {
+    const layouts = [standard, portrait, printLayout(57), landscape].flatMap((l) => [
+      l,
+      printLayout(l.cardMm.width, l.doubleSided, 'short'),
+    ])
+    for (const layout of layouts) {
       for (let slot = 0; slot < layout.perPage; slot++) {
         const front = slotOriginMm(layout, slot)
         const back = backRectMm(layout, slot)
         const frontCentre = { x: front.x + layout.printMm.width / 2, y: front.y + layout.printMm.height / 2 }
         const backCentre = { x: back.x + back.width / 2, y: back.y + back.height / 2 }
-        // Turned over the long edge: x mirrors in portrait, y in landscape. The centres must coincide.
-        if (layout.orientation === 'portrait') {
+        // Turned side to side x mirrors, top to bottom y mirrors. The centres must coincide.
+        const sideways = (layout.orientation === 'portrait') === (layout.flipEdge === 'long')
+        if (sideways) {
           expect(layout.pageMm.width - backCentre.x).toBeCloseTo(frontCentre.x, 9)
           expect(backCentre.y).toBeCloseTo(frontCentre.y, 9)
         } else {

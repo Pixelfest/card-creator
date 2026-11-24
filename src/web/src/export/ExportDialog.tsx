@@ -17,7 +17,7 @@ import {
   pageCount,
   parseCardWidth,
   printLayout,
-  type Orientation,
+  type FlipEdge,
 } from './layout'
 import type { ExportProgress } from './render'
 
@@ -61,25 +61,21 @@ function storeCardWidth(width: number) {
   }
 }
 
-/** Whether Backs are turned 180°, per page orientation, remembered in this browser only. */
-const turnBacksKey = (orientation: Orientation) => `cardCreator.export.turnBacks.${orientation}`
+/** The double-sided flip edge, remembered in this browser only: it follows the user's printer. */
+const FLIP_EDGE_KEY = 'cardCreator.export.flipEdge'
 
-function storedTurnBacks(): Partial<Record<Orientation, boolean>> {
-  const turns: Partial<Record<Orientation, boolean>> = {}
-  for (const orientation of ['portrait', 'landscape'] as const) {
-    try {
-      const stored = window.localStorage.getItem(turnBacksKey(orientation))
-      if (stored === 'true' || stored === 'false') turns[orientation] = stored === 'true'
-    } catch {
-      // Storage blocked: use the layout's default.
-    }
+function storedFlipEdge(): FlipEdge {
+  try {
+    if (window.localStorage.getItem(FLIP_EDGE_KEY) === 'short') return 'short'
+  } catch {
+    // Storage blocked: use the default.
   }
-  return turns
+  return 'long'
 }
 
-function storeTurnBacks(orientation: Orientation, turn: boolean) {
+function storeFlipEdge(edge: FlipEdge) {
   try {
-    window.localStorage.setItem(turnBacksKey(orientation), String(turn))
+    window.localStorage.setItem(FLIP_EDGE_KEY, edge)
   } catch {
     // Not remembered; the export still works.
   }
@@ -105,15 +101,14 @@ export function ExportDialog({ setName, onClose }: { setName: string; onClose: (
   )
   const [phase, setPhase] = useState<Phase>({ kind: 'choose' })
   const [widthInput, setWidthInput] = useState(storedCardWidth)
-  const [turns, setTurns] = useState(storedTurnBacks)
+  const [flipEdge, setFlipEdge] = useState(storedFlipEdge)
 
   const cardWidth = parseCardWidth(widthInput)
   const doubleSided = isDoubleSided(cards, manifest?.backs, selected)
-  const defaultLayout = printLayout(cardWidth ?? CARD_MM.width, doubleSided)
-  const layout = { ...defaultLayout, turnBacks: turns[defaultLayout.orientation] ?? defaultLayout.turnBacks }
-  const setTurnBacks = (turn: boolean) => {
-    storeTurnBacks(layout.orientation, turn)
-    setTurns((current) => ({ ...current, [layout.orientation]: turn }))
+  const layout = printLayout(cardWidth ?? CARD_MM.width, doubleSided, flipEdge)
+  const chooseFlipEdge = (edge: FlipEdge) => {
+    storeFlipEdge(edge)
+    setFlipEdge(edge)
   }
   const printable = cards.filter((c) => c.copies > 0)
   const cardCount = expandCopies(cards, selected).length
@@ -267,20 +262,22 @@ export function ExportDialog({ setName, onClose }: { setName: string; onClose: (
       <p className={styles.reminder}>Print at 100% / Actual size: don't use Fit to page.</p>
       {doubleSided && (
         <>
-          <p className={styles.reminder}>Print double-sided, flip on long edge.</p>
-          <label className={styles.turn}>
-            <input
-              type="checkbox"
-              checked={layout.turnBacks}
-              disabled={exporting}
-              onChange={(e) => setTurnBacks(e.target.checked)}
-            />
-            Turn Backs 180°
-            <span className={styles.muted}>
-              {' '}
-              (for {layout.orientation}; switch this if your Backs print upside down)
-            </span>
-          </label>
+          <fieldset className={styles.flip} disabled={exporting}>
+            <legend>Flip on</legend>
+            {(['long', 'short'] as const).map((edge) => (
+              <label key={edge}>
+                <input
+                  type="radio"
+                  name="flip-edge"
+                  value={edge}
+                  checked={flipEdge === edge}
+                  onChange={() => chooseFlipEdge(edge)}
+                />
+                {edge === 'long' ? 'Long edge' : 'Short edge'}
+              </label>
+            ))}
+          </fieldset>
+          <p className={styles.reminder}>Print double-sided, flip on {flipEdge} edge.</p>
         </>
       )}
 
